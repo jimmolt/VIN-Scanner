@@ -64,7 +64,7 @@ h1{font:600 22px/1.2 var(--font-body);margin:0;letter-spacing:-.01em}
 .tips li{padding-left:14px;position:relative}
 .tips li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:2px;background:var(--accent)}
 .canvaswrap{display:flex;justify-content:center;background:var(--bg);border-radius:8px;overflow:hidden}
-#preview{display:block;touch-action:none;cursor:crosshair;max-width:100%}
+#preview{display:block;max-width:100%}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row .btn{flex:1 1 140px}
 
@@ -114,37 +114,74 @@ summary{cursor:pointer;font-weight:500}
 .logitem img{max-width:100%;height:70px;object-fit:contain;object-position:left;border:1px solid var(--line);border-radius:4px;background:#fff}
 .tally{margin:0;text-align:center}
 @media (prefers-reduced-motion: reduce){.bar i{transition:none}}
+
+.stack{display:grid;gap:10px}
+.row.tight .btn{flex:1 1 0;min-width:0;padding-inline:6px;min-height:44px}
+.cropv{position:relative;border-radius:10px;overflow:hidden;background:#000}
+.camv{position:relative;width:100%;height:min(58vh,460px);background:#000;border-radius:14px;overflow:hidden}
+.camv video{width:100%;height:100%;object-fit:cover;display:block}
+.camframe{position:absolute;border:3px solid #fff;border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.55);pointer-events:none}
+.camrot{display:none;position:absolute;inset:0;z-index:2;background:rgba(0,0,0,.82);color:#fff;font-weight:700;font-size:17px;text-align:center;align-items:center;justify-content:center;padding:20px}
+@media (orientation:landscape) and (max-height:500px) and (pointer:coarse){.camrot{display:flex}}
+.btn.camshot{min-height:68px;font-size:21px;border-radius:14px;letter-spacing:.01em}
+.linkrow{display:flex;flex-wrap:wrap;gap:4px 18px}
+label.linkbtn{display:inline-block}
 </style>
 </head>
 <body>
 <main>
   <header>
     <h1>VIN Scanner</h1>
-    <span class="tag">Feasibility test</span>
+    <span class="tag">Feasibility test &middot; v1.1.0</span>
   </header>
 
   <section class="capture" aria-label="Add a photo">
-    <label class="btn primary" for="cam">Take photo</label>
-    <input class="sr" id="cam" type="file" accept="image/*" capture="environment">
+    <button class="btn primary" id="camBtn" type="button">Take photo</button>
     <label class="btn" for="lib">Choose photo</label>
     <input class="sr" id="lib" type="file" accept="image/*">
+    <input class="sr" id="cam" type="file" accept="image/*" capture="environment">
   </section>
-  <button class="linkbtn" id="sampleBtn" type="button">Run on a generated sample image</button>
+  <div class="linkrow">
+    <label class="linkbtn" for="cam" id="camAppLbl">Use phone camera app</label>
+    <button class="linkbtn" id="sampleBtn" type="button">Run on a generated sample image</button>
+  </div>
 
   <section class="card stage" aria-label="Photo">
     <div id="tips">
       <ul class="tips">
         <li>Windshield VIN: driver side, at the bottom corner of the glass. Shoot from outside the car.</li>
         <li>Door VIN: the sticker on the driver door post. Use the 17-character line, not the barcode.</li>
-        <li>Tilt the phone until the glare slides off the plate. Fill the frame with the VIN.</li>
+        <li>Take photo opens the camera with a box. Hold the phone upright and fit the VIN inside the box.</li>
+        <li>Tilt the phone until the glare slides off the plate.</li>
       </ul>
+    </div>
+    <div class="stack" id="camArea" hidden>
+      <div class="camv" id="camv"><video playsinline muted autoplay></video><div class="camframe" id="camframe"></div><div class="camrot">Turn your phone upright (portrait) to take the photo</div></div>
+      <p class="muted small" style="margin:0">Hold the phone upright and line up the 17 characters of the VIN inside the box so the text is level and fills it. Tap the screen to focus.</p>
+      <button class="btn primary camshot" id="camShot" type="button">Take photo</button>
+      <button class="btn" id="camCancel" type="button">Cancel</button>
+    </div>
+    <div class="stack" id="cropArea" hidden>
+      <p class="muted small" style="margin:0"><b>Crop to the VIN.</b> Pinch or use + and &minus; to zoom, drag the photo to move it, and drag the white corners to fit the box around the 17 characters of the VIN. Use Turn if the VIN is sideways.</p>
+      <div class="cropv" id="shot"></div>
+      <div class="row tight">
+        <button class="btn" id="zoomOut" type="button" aria-label="Zoom out">&minus;</button>
+        <button class="btn" id="zoomFit" type="button">Fit</button>
+        <button class="btn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+        <button class="btn" id="turnL" type="button" aria-label="Turn left">&#8634; Turn</button>
+        <button class="btn" id="turnR" type="button" aria-label="Turn right">Turn &#8635;</button>
+      </div>
+      <button class="btn primary" id="acceptCrop" type="button">Accept crop</button>
+      <button class="linkbtn" id="startOver" type="button">Start over with a new photo</button>
     </div>
     <div id="photoArea" hidden>
       <div class="canvaswrap"><canvas id="preview"></canvas></div>
-      <p class="muted small" style="margin:8px 0 0">Drag over the VIN to crop. A tight crop reads much better than a full photo.</p>
+      <p class="muted small" style="margin:8px 0 0">The darker area was left out of the read. Tap Crop again to change the box.</p>
     </div>
     <div class="row" id="photoActions" hidden>
       <button class="btn" id="readBtn" type="button">Read again</button>
+      <button class="btn" id="cropAgain" type="button">Crop again</button>
+      <button class="btn" id="retake" type="button">Retake photo</button>
       <button class="btn" id="clearCrop" type="button">Clear crop</button>
     </div>
     <div class="progress" id="progress" hidden>
@@ -202,8 +239,12 @@ function checkDigitOK(v){
 }
 function plausible(v){ return VIN_RE.test(v) && YEAR_CHARS.includes(v[9]); }
 
+/* The word VIN printed in front of the number is a label, not part of it. OCR may read it as VIN, V1N, VlN or V|N, with or without a space or colon. */
 function normalizeRun(s){
-  return s.toUpperCase().replace(/\bVIN\b[:#]?/g,' ').replace(/[^A-Z0-9]/g,'').replace(/I/g,'1').replace(/[OQ]/g,'0');
+  let t = s.toUpperCase().replace(/\bV[I1L|!]N\b[:#.\-\s]*/g,' ').replace(/^\s*V[I1L|!]N[:#.\-]+/,' ');
+  t = t.replace(/[^A-Z0-9]/g,'').replace(/I/g,'1').replace(/[OQ]/g,'0');
+  if(t.length >= 18 && /^V[1L]N/.test(t)) t = t.slice(3);
+  return t;
 }
 function candidatesFromText(text){
   const out = new Map();
@@ -258,7 +299,7 @@ function repairs(vin){
 // ==VIN-CORE-END==
 
 const $ = id => document.getElementById(id);
-const state = {src:null, crop:null, worker:null, busy:false, scans:[], current:null, drag:null, passIdx:0, passCount:1, lastDecoded:''};
+const state = {src:null, crop:null, worker:null, busy:false, scans:[], current:null, passIdx:0, passCount:1, lastDecoded:'', step:'idle', cv:null, stream:null, frame:null};
 
 /* ---------- status + progress ---------- */
 function status(msg, kind){
@@ -289,12 +330,12 @@ async function loadFile(file){
   if(bmp){
     setSource(bmp, bmp.width, bmp.height);
     if(bmp.close) bmp.close();
-    readVin();
+    enterCrop();
     return;
   }
   const url = URL.createObjectURL(file);
   const im = new Image();
-  im.onload = () => { setSource(im, im.naturalWidth, im.naturalHeight); URL.revokeObjectURL(url); readVin(); };
+  im.onload = () => { setSource(im, im.naturalWidth, im.naturalHeight); URL.revokeObjectURL(url); enterCrop(); };
   im.onerror = () => { URL.revokeObjectURL(url); openFailure(file, why); };
   im.src = url;
 }
@@ -303,11 +344,18 @@ function setSource(drawable, w, h){
   const c = document.createElement('canvas');
   c.width = Math.round(w*k); c.height = Math.round(h*k);
   c.getContext('2d').drawImage(drawable, 0, 0, c.width, c.height);
-  state.src = c; state.crop = null;
-  $('tips').hidden = true; $('photoArea').hidden = false; $('photoActions').hidden = false;
+  state.src = c; state.crop = null; state.cv = null;
   $('vin').value = ''; state.lastDecoded = ''; $('decode').hidden = true;
   updateVinUI(false);
-  drawPreview();
+}
+/* Steps: idle (tips), cam (live camera), crop (zoom and corner handles), result (photo with the read area shown). */
+function showStep(step){
+  state.step = step;
+  $('tips').hidden = step !== 'idle';
+  $('camArea').hidden = step !== 'cam';
+  $('cropArea').hidden = step !== 'crop';
+  $('photoArea').hidden = step !== 'result';
+  $('photoActions').hidden = step !== 'result';
 }
 function drawPreview(){
   const s = state.src; if(!s) return;
@@ -321,7 +369,7 @@ function drawPreview(){
   c.width = Math.round(cssW*dpr); c.height = Math.round(cssH*dpr);
   const g = c.getContext('2d');
   g.drawImage(s, 0, 0, c.width, c.height);
-  const r = state.drag || state.crop;
+  const r = state.crop;
   if(r){
     const sx = c.width/s.width, sy = c.height/s.height;
     const x = r.x*sx, y = r.y*sy, w = r.w*sx, h = r.h*sy;
@@ -332,36 +380,165 @@ function drawPreview(){
     g.lineWidth = 3*dpr; g.strokeRect(x,y,w,h);
   }
 }
-function pointerToSrc(e){
-  const c = $('preview'), b = c.getBoundingClientRect(), s = state.src;
-  const x = Math.max(0, Math.min(s.width,  (e.clientX-b.left)/b.width*s.width));
-  const y = Math.max(0, Math.min(s.height, (e.clientY-b.top)/b.height*s.height));
-  return {x,y};
+window.addEventListener('resize', ()=>{ if(state.step === 'result') drawPreview(); if(state.step === 'cam') camLayout(); });
+function rotateCanvas(c, deg){
+  const o = document.createElement('canvas'), q = ((deg%360)+360)%360, sw = q === 90 || q === 270;
+  o.width = sw ? c.height : c.width; o.height = sw ? c.width : c.height;
+  const g = o.getContext('2d');
+  g.translate(o.width/2, o.height/2); g.rotate(deg*Math.PI/180); g.drawImage(c, -c.width/2, -c.height/2);
+  return o;
 }
-function rectFrom(a,b){
-  return {x:Math.min(a.x,b.x), y:Math.min(a.y,b.y), w:Math.abs(a.x-b.x), h:Math.abs(a.y-b.y)};
+
+/* ---------- live camera with a rounded guide box: hold the phone upright, fit the VIN in the box ---------- */
+function camStopOnly(){ if(state.stream){ try{ state.stream.getTracks().forEach(t=>t.stop()); }catch(e){} state.stream = null; } }
+function stopCamera(){
+  camStopOnly();
+  try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
 }
-(function bindCrop(){
-  const c = $('preview'); let start = null;
-  c.addEventListener('pointerdown', e=>{
-    if(!state.src || state.busy) return;
-    c.setPointerCapture(e.pointerId); start = pointerToSrc(e); state.drag = rectFrom(start,start); drawPreview();
-  });
-  c.addEventListener('pointermove', e=>{
-    if(!start) return; state.drag = rectFrom(start, pointerToSrc(e)); drawPreview();
-  });
-  function end(e){
-    if(!start) return;
-    const r = rectFrom(start, pointerToSrc(e)); start = null; state.drag = null;
-    const minSide = Math.max(24, state.src.width*0.03);
-    state.crop = (r.w >= minSide && r.h >= minSide*0.5) ? r : null;
-    drawPreview();
-    if(state.crop) readVin();
+function camLayout(){
+  const box = $('camv'), f = $('camframe'); if(!box || !f) return;
+  const cw = box.clientWidth, ch = box.clientHeight, asp = 4.6;
+  let fw = cw*.92, fh = fw/asp; if(fh > ch*.8){ fh = ch*.8; fw = fh*asp; }
+  const x = (cw-fw)/2, y = (ch-fh)/2;
+  f.style.cssText = 'left:'+x+'px;top:'+y+'px;width:'+fw+'px;height:'+fh+'px';
+  state.frame = {x, y, w:fw, h:fh, cw, ch};
+}
+async function camStart(){
+  const v = document.querySelector('#camv video'); if(!v) return;
+  try{
+    const vc = id => ({audio:false, video:Object.assign({width:{ideal:1920}, height:{ideal:1080}}, id ? {deviceId:{exact:id}} : {facingMode:{ideal:'environment'}})});
+    state.stream = await navigator.mediaDevices.getUserMedia(vc(''));
+    /* iPhone Pro: the main lens cannot focus up close, the ultra wide lens can. Use it whenever the phone has one. */
+    try{
+      const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind === 'videoinput' && d.label);
+      const ultra = devs.find(d=>/ultra/i.test(d.label) && /back|rear|environment/i.test(d.label)) || devs.find(d=>/ultra/i.test(d.label));
+      if(ultra && state.stream.getVideoTracks()[0].getSettings().deviceId !== ultra.deviceId){
+        camStopOnly(); state.stream = await navigator.mediaDevices.getUserMedia(vc(ultra.deviceId));
+      }
+    }catch(e){ if(!state.stream) state.stream = await navigator.mediaDevices.getUserMedia(vc('')); }
+    v.srcObject = state.stream; v.setAttribute('playsinline',''); await v.play();
+    try{
+      const t = state.stream.getVideoTracks()[0], c = t.getCapabilities ? t.getCapabilities() : {};
+      if(c.focusMode && c.focusMode.includes('continuous')) await t.applyConstraints({advanced:[{focusMode:'continuous'}]});
+    }catch(e){}
+    camLayout();
+  }catch(e){
+    stopCamera(); showStep(state.src ? 'result' : 'idle');
+    if(state.src) drawPreview();
+    status('The camera could not open ('+(e && e.name || 'error')+'). Allow camera access for this site, or tap Use phone camera app.', 'bad');
   }
-  c.addEventListener('pointerup', end);
-  c.addEventListener('pointercancel', ()=>{ start = null; state.drag = null; drawPreview(); });
-  window.addEventListener('resize', drawPreview);
-})();
+}
+function openCamera(){
+  if(state.busy) return;
+  if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ $('cam').click(); return; }
+  try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(()=>{}); }catch(e){}
+  showStep('cam'); status('');
+  return camStart();
+}
+function camShot(){
+  if(matchMedia('(orientation:landscape) and (max-height:500px) and (pointer:coarse)').matches) return;
+  const v = document.querySelector('#camv video'), F = state.frame;
+  if(!v || !F || !v.videoWidth) return;
+  const vw = v.videoWidth, vh = v.videoHeight, k = Math.max(F.cw/vw, F.ch/vh), ox = (vw*k-F.cw)/2, oy = (vh*k-F.ch)/2;
+  const m = Math.min(1, 2400/Math.max(vw,vh));
+  const full = document.createElement('canvas'); full.width = Math.round(vw*m); full.height = Math.round(vh*m);
+  full.getContext('2d').drawImage(v, 0, 0, full.width, full.height);
+  /* the box on screen, mapped back to the video frame, with a small margin */
+  const pad = .04;
+  let x0 = (F.x+ox)/k/vw - pad*F.w/k/vw, y0 = (F.y+oy)/k/vh - pad*F.h/k/vh;
+  let x1 = (F.x+F.w+ox)/k/vw + pad*F.w/k/vw, y1 = (F.y+F.h+oy)/k/vh + pad*F.h/k/vh;
+  x0 = Math.max(0,x0); y0 = Math.max(0,y0); x1 = Math.min(1,x1); y1 = Math.min(1,y1);
+  stopCamera();
+  setSource(full, full.width, full.height);
+  state.crop = {x:x0*state.src.width, y:y0*state.src.height, w:(x1-x0)*state.src.width, h:(y1-y0)*state.src.height};
+  showStep('result'); drawPreview(); readVin();
+}
+
+/* ---------- crop viewer: pinch/wheel zoom, drag to pan, white box with four draggable corners (like the iPhone crop) ---------- */
+function startCropView(host){
+  const src = state.src, dpr = window.devicePixelRatio || 1, W = host.clientWidth || 340, H = Math.round(Math.max(260, Math.min(window.innerHeight*.44, 460)));
+  const cv = document.createElement('canvas'); cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+  cv.style.cssText = 'width:'+W+'px;height:'+H+'px;display:block;touch-action:none;background:#000';
+  host.appendChild(cv);
+  const g = cv.getContext('2d'), iw = src.width, ih = src.height, fit = Math.min(W/iw, H/ih);
+  const V = {W, H, iw, ih, fit, s:fit, ox:(W-iw*fit)/2, oy:(H-ih*fit)/2, box:{x0:0, y0:0, x1:iw, y1:ih}};
+  const maxS = () => Math.max(6, fit*14), clampS = s => Math.min(maxS(), Math.max(fit*.8, s));
+  const sx = x => V.ox+x*V.s, sy = y => V.oy+y*V.s, ix = px => (px-V.ox)/V.s, iy = py => (py-V.oy)/V.s;
+  const corners = () => { const b = V.box; return [[sx(b.x0),sy(b.y0)],[sx(b.x1),sy(b.y0)],[sx(b.x1),sy(b.y1)],[sx(b.x0),sy(b.y1)]]; };
+  function draw(){
+    g.setTransform(dpr,0,0,dpr,0,0); g.fillStyle = '#000'; g.fillRect(0,0,W,H);
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    g.drawImage(src, V.ox, V.oy, iw*V.s, ih*V.s);
+    const cs = corners(), x0 = cs[0][0], y0 = cs[0][1], x1 = cs[1][0], y1 = cs[2][1];
+    const L = Math.max(0,Math.min(W,x0)), R = Math.max(0,Math.min(W,x1)), T = Math.max(0,Math.min(H,y0)), B = Math.max(0,Math.min(H,y1));
+    g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0,0,W,T); g.fillRect(0,B,W,H-B); g.fillRect(0,T,L,B-T); g.fillRect(R,T,W-R,B-T);
+    g.strokeStyle = 'rgba(255,255,255,.4)'; g.lineWidth = 1; g.beginPath();
+    for(let i=1;i<3;i++){
+      g.moveTo(x0+(x1-x0)*i/3,y0); g.lineTo(x0+(x1-x0)*i/3,y1);
+      g.moveTo(x0,y0+(y1-y0)*i/3); g.lineTo(x1,y0+(y1-y0)*i/3);
+    }
+    g.stroke();
+    g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.strokeRect(x0,y0,x1-x0,y1-y0);
+    const k = Math.min(24,(x1-x0)/2.5,(y1-y0)/2.5); g.lineWidth = 5; g.lineCap = 'square'; g.beginPath();
+    g.moveTo(x0,y0+k); g.lineTo(x0,y0); g.lineTo(x0+k,y0); g.moveTo(x1-k,y0); g.lineTo(x1,y0); g.lineTo(x1,y0+k);
+    g.moveTo(x1,y1-k); g.lineTo(x1,y1); g.lineTo(x1-k,y1); g.moveTo(x0+k,y1); g.lineTo(x0,y1); g.lineTo(x0,y1-k); g.stroke();
+  }
+  V.zoomAt = (px,py,f) => { const s = clampS(V.s*f), ax = ix(px), ay = iy(py); V.s = s; V.ox = px-ax*s; V.oy = py-ay*s; draw(); };
+  V.fitView = () => { V.s = fit; V.ox = (W-iw*fit)/2; V.oy = (H-ih*fit)/2; draw(); };
+  const pts = new Map(); let mode = '', cIdx = -1, last = null, pin = null;
+  const loc = e => { const r = cv.getBoundingClientRect(); return [(e.clientX-r.left)*W/r.width, (e.clientY-r.top)*H/r.height]; };
+  cv.onpointerdown = e => {
+    cv.setPointerCapture(e.pointerId); const p = loc(e); pts.set(e.pointerId, p);
+    if(pts.size === 2){
+      const [a,b] = [...pts.values()], mx = (a[0]+b[0])/2, my = (a[1]+b[1])/2;
+      pin = {d:Math.hypot(a[0]-b[0],a[1]-b[1])||1, s:V.s, ax:ix(mx), ay:iy(my)}; mode = 'pinch'; return;
+    }
+    const cs = corners(); cIdx = -1; let best = 34;
+    cs.forEach((c,i)=>{ const d = Math.hypot(c[0]-p[0],c[1]-p[1]); if(d < best){ best = d; cIdx = i; } });
+    if(cIdx >= 0) mode = 'corner'; else { mode = 'pan'; last = p; }
+  };
+  cv.onpointermove = e => {
+    if(!pts.has(e.pointerId)) return;
+    const p = loc(e); pts.set(e.pointerId, p);
+    if(mode === 'pinch' && pts.size >= 2){
+      const [a,b] = [...pts.values()], mx = (a[0]+b[0])/2, my = (a[1]+b[1])/2, d = Math.hypot(a[0]-b[0],a[1]-b[1])||1;
+      V.s = clampS(pin.s*d/pin.d); V.ox = mx-pin.ax*V.s; V.oy = my-pin.ay*V.s; draw(); return;
+    }
+    if(mode === 'corner'){
+      const b = V.box, m = 18/V.s, x = Math.min(iw,Math.max(0,ix(p[0]))), y = Math.min(ih,Math.max(0,iy(p[1])));
+      if(cIdx === 0 || cIdx === 3) b.x0 = Math.min(x, b.x1-m); else b.x1 = Math.max(x, b.x0+m);
+      if(cIdx === 0 || cIdx === 1) b.y0 = Math.min(y, b.y1-m); else b.y1 = Math.max(y, b.y0+m);
+      draw(); return;
+    }
+    if(mode === 'pan' && last){ V.ox += p[0]-last[0]; V.oy += p[1]-last[1]; last = p; draw(); }
+  };
+  const up = e => {
+    pts.delete(e.pointerId);
+    if(pts.size < 2 && mode === 'pinch'){ mode = ''; const r = [...pts.values()][0]; if(r){ mode = 'pan'; last = r; } }
+    else if(!pts.size) mode = '';
+  };
+  cv.onpointerup = up; cv.onpointercancel = up;
+  cv.onwheel = e => { e.preventDefault(); const p = loc(e); V.zoomAt(p[0], p[1], Math.exp(-e.deltaY*.0015)); };
+  state.cv = V; draw();
+}
+function enterCrop(){
+  if(!state.src) return;
+  stopCamera(); showStep('crop'); status('');
+  const host = $('shot'); host.textContent = ''; startCropView(host);
+}
+function turnPhoto(deg){
+  if(!state.src || state.step !== 'crop') return;
+  state.src = rotateCanvas(state.src, deg); state.crop = null;
+  const host = $('shot'); host.textContent = ''; startCropView(host);
+}
+function acceptCrop(){
+  const V = state.cv; if(!V || state.busy) return;
+  const b = V.box;
+  const whole = b.x0 <= 1 && b.y0 <= 1 && b.x1 >= V.iw-1 && b.y1 >= V.ih-1;
+  state.crop = whole ? null : {x:b.x0, y:b.y0, w:b.x1-b.x0, h:b.y1-b.y0};
+  state.cv = null; $('shot').textContent = '';
+  showStep('result'); drawPreview(); readVin();
+}
 
 /* ---------- image preprocessing ---------- */
 function adaptive(gray, w, h){
@@ -486,6 +663,7 @@ function setBusy(b){
   state.busy = b;
   $('readBtn').disabled = b; $('clearCrop').disabled = b;
   $('cam').disabled = b; $('lib').disabled = b; $('sampleBtn').disabled = b;
+  $('camBtn').disabled = b; $('cropAgain').disabled = b; $('retake').disabled = b;
   $('progress').hidden = !b;
 }
 async function readVin(){
@@ -528,10 +706,10 @@ async function readVin(){
     }else if(partial){
       $('vin').value = partial;
       updateVinUI(false);
-      status('Only '+partial.length+' of 17 characters were readable. Crop tighter on the VIN and read again.', 'bad');
+      status('Only '+partial.length+' of 17 characters were readable. Tap Crop again and box just the VIN.', 'bad');
     }else{
       updateVinUI(false);
-      status('No VIN found. Crop tightly around the VIN and read again.', 'bad');
+      status('No VIN found. Tap Crop again and box just the VIN, or Retake photo.', 'bad');
     }
     renderTally();
   }catch(err){
@@ -678,8 +856,22 @@ $('lib').addEventListener('change', e=>{ loadFile(e.target.files[0]); e.target.v
 $('readBtn').addEventListener('click', readVin);
 $('clearCrop').addEventListener('click', ()=>{ state.crop = null; drawPreview(); });
 $('sampleBtn').addEventListener('click', ()=>{
-  const c = makeSample(); setSource(c, c.width, c.height); readVin();
+  if(state.busy) return;
+  stopCamera();
+  const c = makeSample(); setSource(c, c.width, c.height); showStep('result'); drawPreview(); readVin();
 });
+$('camBtn').addEventListener('click', openCamera);
+$('retake').addEventListener('click', openCamera);
+$('camShot').addEventListener('click', camShot);
+$('camCancel').addEventListener('click', ()=>{ stopCamera(); showStep(state.src ? 'result' : 'idle'); if(state.src) drawPreview(); });
+$('cropAgain').addEventListener('click', enterCrop);
+$('acceptCrop').addEventListener('click', acceptCrop);
+$('startOver').addEventListener('click', ()=>{ state.src = null; state.crop = null; state.cv = null; $('shot').textContent = ''; showStep('idle'); status(''); updateVinUI(false); });
+$('zoomOut').addEventListener('click', ()=>{ const V = state.cv; if(V) V.zoomAt(V.W/2, V.H/2, 1/1.6); });
+$('zoomIn').addEventListener('click', ()=>{ const V = state.cv; if(V) V.zoomAt(V.W/2, V.H/2, 1.6); });
+$('zoomFit').addEventListener('click', ()=>{ const V = state.cv; if(V) V.fitView(); });
+$('turnL').addEventListener('click', ()=>turnPhoto(-90));
+$('turnR').addEventListener('click', ()=>turnPhoto(90));
 updateVinUI(false);
 </script>
 </body>
