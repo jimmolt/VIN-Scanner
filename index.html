@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VIN Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one phone-width column. Capture, crop, read, verify against the check digit, decode. */
+:root{
+  --bg:#f2f5f8; --surface:#ffffff; --line:#d3dbe3; --fg:#13202c; --muted:#566677;
+  --accent:#0a6a86; --accent-fg:#ffffff;
+  --good:#17703a; --good-bg:#dff3e6;
+  --warn:#8a5200; --warn-bg:#fcefd2;
+  --bad:#a82a1f; --bad-bg:#fbe3df;
+  --font-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e1419; --surface:#161e26; --line:#2a3744; --fg:#e6edf3; --muted:#93a4b4;
+    --accent:#4cc3e0; --accent-fg:#04202a;
+    --good:#6fd596; --good-bg:#12301f;
+    --warn:#f0b84a; --warn-bg:#3a2a0c;
+    --bad:#ff9a8f; --bad-bg:#40181a;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--fg);
+  font:15px/1.45 var(--font-body);
+  padding-block:max(16px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-bottom, 0px));
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+main{max-width:560px;margin:0 auto;display:grid;gap:14px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font:600 22px/1.2 var(--font-body);margin:0;letter-spacing:-.01em}
+.tag{font:500 11px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+.capture{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;text-align:center;
+  min-height:48px;padding:0 16px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface);color:var(--fg);font:600 15px var(--font-body);cursor:pointer;
+}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:transparent;min-height:54px}
+.btn:focus-visible,.btn:focus-within,input:focus-visible,summary:focus-visible,.linkbtn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.5;cursor:default}
+.linkbtn{background:none;border:0;color:var(--accent);font:500 14px var(--font-body);text-decoration:underline;padding:6px 0;cursor:pointer;justify-self:start}
+
+.stage{display:grid;gap:10px}
+.tips{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.tips li{padding-left:14px;position:relative}
+.tips li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:2px;background:var(--accent)}
+.canvaswrap{display:flex;justify-content:center;background:var(--bg);border-radius:8px;overflow:hidden}
+#preview{display:block;touch-action:none;cursor:crosshair;max-width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row .btn{flex:1 1 140px}
+
+.progress{display:grid;gap:6px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+#status{margin:0;font-size:14px}
+#status.bad{color:var(--bad)}
+
+label.field{display:block;font:600 12px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+#vin{
+  width:100%;padding:12px;border-radius:8px;border:1.5px solid var(--line);
+  background:var(--bg);color:var(--fg);
+  font:600 clamp(16px,5.2vw,24px)/1.2 var(--font-mono);letter-spacing:.04em;text-transform:uppercase;
+}
+.meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font:600 12.5px var(--font-body)}
+.pill.neutral{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.pill.good{background:var(--good-bg);color:var(--good)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.count{font:500 13px var(--font-mono);color:var(--muted)}
+.segs{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:12px}
+.seg{display:grid;gap:1px}
+.seg b{font:600 15px var(--font-mono);letter-spacing:.06em}
+.seg span{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.seg.check b{color:var(--accent)}
+.fixes{margin-top:12px;display:grid;gap:8px}
+.fixes p{margin:0}
+.fixbtn{
+  text-align:left;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);
+  font:500 14px var(--font-mono);letter-spacing:.03em;cursor:pointer;overflow-wrap:anywhere;min-height:44px;
+}
+.fixbtn mark{background:var(--warn-bg);color:var(--warn);border-radius:3px;padding:0 2px;font-weight:600}
+.fixnote{font-size:12.5px;color:var(--muted)}
+
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:10px 0 0}
+dt{color:var(--muted);font-size:13px}
+dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+h2{font:600 15px var(--font-body);margin:0}
+
+details{border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:500}
+.logitem{margin-top:12px;display:grid;gap:6px}
+.logitem h3{font:600 13px var(--font-body);margin:0}
+.logitem pre{margin:0;padding:8px;border-radius:6px;background:var(--bg);font:12px/1.4 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere;max-height:140px;overflow:auto}
+.logitem img{max-width:100%;height:70px;object-fit:contain;object-position:left;border:1px solid var(--line);border-radius:4px;background:#fff}
+.tally{margin:0;text-align:center}
+@media (prefers-reduced-motion: reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>VIN Scanner</h1>
+    <span class="tag">Feasibility test</span>
+  </header>
+
+  <section class="capture" aria-label="Add a photo">
+    <label class="btn primary" for="cam">Take photo</label>
+    <input class="sr" id="cam" type="file" accept="image/*" capture="environment">
+    <label class="btn" for="lib">Choose photo</label>
+    <input class="sr" id="lib" type="file" accept="image/*">
+  </section>
+  <button class="linkbtn" id="sampleBtn" type="button">Run on a generated sample image</button>
+
+  <section class="card stage" aria-label="Photo">
+    <div id="tips">
+      <ul class="tips">
+        <li>Windshield VIN: driver side, at the bottom corner of the glass. Shoot from outside the car.</li>
+        <li>Door VIN: the sticker on the driver door post. Use the 17-character line, not the barcode.</li>
+        <li>Tilt the phone until the glare slides off the plate. Fill the frame with the VIN.</li>
+      </ul>
+    </div>
+    <div id="photoArea" hidden>
+      <div class="canvaswrap"><canvas id="preview"></canvas></div>
+      <p class="muted small" style="margin:8px 0 0">Drag over the VIN to crop. A tight crop reads much better than a full photo.</p>
+    </div>
+    <div class="row" id="photoActions" hidden>
+      <button class="btn" id="readBtn" type="button">Read again</button>
+      <button class="btn" id="clearCrop" type="button">Clear crop</button>
+    </div>
+    <div class="progress" id="progress" hidden>
+      <div class="bar"><i id="barfill"></i></div>
+    </div>
+    <p id="status" role="status" aria-live="polite" class="muted"></p>
+  </section>
+
+  <section class="card" aria-label="VIN">
+    <label class="field" for="vin">VIN</label>
+    <input id="vin" type="text" maxlength="17" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Scan or type 17 characters">
+    <div class="meta">
+      <span class="pill neutral" id="pill">Waiting for a photo</span>
+      <span class="count" id="count">0/17</span>
+    </div>
+    <div class="segs" id="segs" hidden></div>
+    <div class="fixes" id="fixes" hidden></div>
+  </section>
+
+  <section class="card" id="decode" hidden aria-label="Vehicle details">
+    <h2>Vehicle details</h2>
+    <p class="muted small" id="dstatus" style="margin:6px 0 0"></p>
+    <dl id="dgrid"></dl>
+  </section>
+
+  <section class="card" aria-label="Details">
+    <details>
+      <summary>What the reader saw</summary>
+      <div id="log"><p class="muted small">Nothing yet. Each pass shows the processed image and the raw text it produced.</p></div>
+    </details>
+  </section>
+
+  <p class="tally muted small" id="tally">No scans yet this session.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+// ==VIN-CORE-START==
+const TRANSLIT = {A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,J:1,K:2,L:3,M:4,N:5,P:7,R:9,S:2,T:3,U:4,V:5,W:6,X:7,Y:8,Z:9};
+const WEIGHTS = [8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2];
+const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/;
+const YEAR_CHARS = 'ABCDEFGHJKLMNPRSTVWXY123456789';
+const CONF = [['0','D'],['5','S'],['8','B'],['2','Z'],['6','G'],['1','7'],['U','V'],['C','G'],['E','F'],['H','N'],['M','N']];
+
+function checkDigitOK(v){
+  if(!VIN_RE.test(v)) return false;
+  let sum = 0;
+  for(let i=0;i<17;i++){
+    const c = v[i];
+    const val = /\d/.test(c) ? +c : TRANSLIT[c];
+    sum += val * WEIGHTS[i];
+  }
+  const r = sum % 11;
+  return v[8] === (r === 10 ? 'X' : String(r));
+}
+function plausible(v){ return VIN_RE.test(v) && YEAR_CHARS.includes(v[9]); }
+
+function normalizeRun(s){
+  return s.toUpperCase().replace(/\bVIN\b[:#]?/g,' ').replace(/[^A-Z0-9]/g,'').replace(/I/g,'1').replace(/[OQ]/g,'0');
+}
+function candidatesFromText(text){
+  const out = new Map();
+  const all = text.split(/\r?\n/).map(normalizeRun);
+  const lines = all.filter(s=>s.length>=17);
+  for(const s of lines){
+    for(let i=0;i+17<=s.length;i++){
+      const w = s.slice(i,i+17);
+      if(!VIN_RE.test(w)) continue;
+      const valid = checkDigitOK(w);
+      const exact = s.length === 17;
+      const prev = out.get(w);
+      if(!prev) out.set(w,{vin:w,valid,exact});
+      else if(exact) prev.exact = true;
+    }
+  }
+  // Glare or a scratch can split one VIN into fragments, sometimes out of order.
+  // Try joining fragments, and keep a join only when the check digit passes.
+  if(![...out.values()].some(c=>c.valid)){
+    const frags = all.filter(s=>s.length>=4 && s.length<17).sort((a,b)=>b.length-a.length).slice(0,5);
+    const joins = [];
+    for(const a of frags) for(const b of frags){
+      if(a !== b) joins.push(a+b);
+    }
+    for(const s of joins){
+      if(s.length === 17 && plausible(s) && checkDigitOK(s) && !out.has(s)) out.set(s,{vin:s,valid:true,exact:false,joined:true});
+    }
+  }
+  return [...out.values()];
+}
+function partialFromText(text){
+  const runs = text.split(/\r?\n/).map(normalizeRun).filter(s=>s.length>=10 && s.length<17);
+  runs.sort((a,b)=>b.length-a.length);
+  return runs[0] || '';
+}
+function neighbors(ch){
+  const s = new Set();
+  for(const g of CONF) if(g.includes(ch)) g.forEach(x=>{ if(x!==ch) s.add(x); });
+  return [...s];
+}
+function repairs(vin){
+  const res = [];
+  if(vin.length !== 17) return res;
+  for(let i=0;i<17;i++){
+    for(const n of neighbors(vin[i])){
+      const t = vin.slice(0,i)+n+vin.slice(i+1);
+      if(plausible(t) && checkDigitOK(t)) res.push({vin:t,pos:i,from:vin[i],to:n});
+    }
+  }
+  return res.slice(0,4);
+}
+// ==VIN-CORE-END==
+
+const $ = id => document.getElementById(id);
+const state = {src:null, crop:null, worker:null, busy:false, scans:[], current:null, drag:null, passIdx:0, passCount:1, lastDecoded:''};
+
+/* ---------- status + progress ---------- */
+function status(msg, kind){
+  const el = $('status'); el.textContent = msg; el.className = kind === 'bad' ? 'bad' : 'muted';
+}
+function setBar(p){
+  $('barfill').style.width = Math.max(0, Math.min(100, p*100)) + '%';
+}
+
+/* ---------- photo loading + crop ---------- */
+function openFailure(file, detail){
+  const type = file.type || 'unknown type';
+  const mb = (file.size/1048576).toFixed(1);
+  const heic = /hei[cf]/i.test(type + ' ' + (file.name || ''));
+  let msg = 'Could not open that photo ('+type+', '+mb+' MB'+(detail ? ', '+detail : '')+'). ';
+  msg += heic
+    ? 'It is a HEIC photo this browser cannot decode. On iPhone, open Settings > Camera > Formats and pick Most Compatible, then retake it.'
+    : 'Try Choose photo instead of Take photo, or retake it with the phone upright.';
+  status(msg, 'bad');
+}
+async function loadFile(file){
+  if(!file) return;
+  status('Opening photo…');
+  let bmp = null, why = '';
+  if(window.createImageBitmap){
+    try{ bmp = await createImageBitmap(file); }catch(e){ why = (e && e.message) ? e.message : String(e); }
+  }
+  if(bmp){
+    setSource(bmp, bmp.width, bmp.height);
+    if(bmp.close) bmp.close();
+    readVin();
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  const im = new Image();
+  im.onload = () => { setSource(im, im.naturalWidth, im.naturalHeight); URL.revokeObjectURL(url); readVin(); };
+  im.onerror = () => { URL.revokeObjectURL(url); openFailure(file, why); };
+  im.src = url;
+}
+function setSource(drawable, w, h){
+  const k = Math.min(1, 3000/Math.max(w,h));
+  const c = document.createElement('canvas');
+  c.width = Math.round(w*k); c.height = Math.round(h*k);
+  c.getContext('2d').drawImage(drawable, 0, 0, c.width, c.height);
+  state.src = c; state.crop = null;
+  $('tips').hidden = true; $('photoArea').hidden = false; $('photoActions').hidden = false;
+  $('vin').value = ''; state.lastDecoded = ''; $('decode').hidden = true;
+  updateVinUI(false);
+  drawPreview();
+}
+function drawPreview(){
+  const s = state.src; if(!s) return;
+  const c = $('preview');
+  const W = c.parentElement.clientWidth || 340;
+  const H = Math.min(window.innerHeight*0.55, W*1.25);
+  const k = Math.min(W/s.width, H/s.height);
+  const cssW = Math.round(s.width*k), cssH = Math.round(s.height*k);
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.style.width = cssW+'px'; c.style.height = cssH+'px';
+  c.width = Math.round(cssW*dpr); c.height = Math.round(cssH*dpr);
+  const g = c.getContext('2d');
+  g.drawImage(s, 0, 0, c.width, c.height);
+  const r = state.drag || state.crop;
+  if(r){
+    const sx = c.width/s.width, sy = c.height/s.height;
+    const x = r.x*sx, y = r.y*sy, w = r.w*sx, h = r.h*sy;
+    g.fillStyle = 'rgba(0,0,0,.5)';
+    g.fillRect(0,0,c.width,y); g.fillRect(0,y+h,c.width,c.height-y-h);
+    g.fillRect(0,y,x,h); g.fillRect(x+w,y,c.width-x-w,h);
+    g.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#0a6a86';
+    g.lineWidth = 3*dpr; g.strokeRect(x,y,w,h);
+  }
+}
+function pointerToSrc(e){
+  const c = $('preview'), b = c.getBoundingClientRect(), s = state.src;
+  const x = Math.max(0, Math.min(s.width,  (e.clientX-b.left)/b.width*s.width));
+  const y = Math.max(0, Math.min(s.height, (e.clientY-b.top)/b.height*s.height));
+  return {x,y};
+}
+function rectFrom(a,b){
+  return {x:Math.min(a.x,b.x), y:Math.min(a.y,b.y), w:Math.abs(a.x-b.x), h:Math.abs(a.y-b.y)};
+}
+(function bindCrop(){
+  const c = $('preview'); let start = null;
+  c.addEventListener('pointerdown', e=>{
+    if(!state.src || state.busy) return;
+    c.setPointerCapture(e.pointerId); start = pointerToSrc(e); state.drag = rectFrom(start,start); drawPreview();
+  });
+  c.addEventListener('pointermove', e=>{
+    if(!start) return; state.drag = rectFrom(start, pointerToSrc(e)); drawPreview();
+  });
+  function end(e){
+    if(!start) return;
+    const r = rectFrom(start, pointerToSrc(e)); start = null; state.drag = null;
+    const minSide = Math.max(24, state.src.width*0.03);
+    state.crop = (r.w >= minSide && r.h >= minSide*0.5) ? r : null;
+    drawPreview();
+    if(state.crop) readVin();
+  }
+  c.addEventListener('pointerup', end);
+  c.addEventListener('pointercancel', ()=>{ start = null; state.drag = null; drawPreview(); });
+  window.addEventListener('resize', drawPreview);
+})();
+
+/* ---------- image preprocessing ---------- */
+function adaptive(gray, w, h){
+  const r = Math.max(8, Math.round(Math.max(w,h)/30));
+  const W = w+1, I = new Uint32Array(W*(h+1));
+  for(let y=0;y<h;y++){
+    let row = 0;
+    for(let x=0;x<w;x++){ row += gray[y*w+x]; I[(y+1)*W+x+1] = I[y*W+x+1] + row; }
+  }
+  const out = new Uint8ClampedArray(w*h);
+  for(let y=0;y<h;y++){
+    const y0 = Math.max(0,y-r), y1 = Math.min(h,y+r+1);
+    for(let x=0;x<w;x++){
+      const x0 = Math.max(0,x-r), x1 = Math.min(w,x+r+1);
+      const area = (x1-x0)*(y1-y0);
+      const sum = I[y1*W+x1] - I[y0*W+x1] - I[y1*W+x0] + I[y0*W+x0];
+      out[y*w+x] = gray[y*w+x]*area < sum*0.92 ? 0 : 255;
+    }
+  }
+  return out;
+}
+function sharpen(gray, w, h){
+  const out = new Uint8ClampedArray(w*h);
+  for(let y=0;y<h;y++){
+    const y0 = Math.max(0,y-2), y1 = Math.min(h-1,y+2);
+    for(let x=0;x<w;x++){
+      const x0 = Math.max(0,x-2), x1 = Math.min(w-1,x+2);
+      let s = 0;
+      for(let yy=y0;yy<=y1;yy++) for(let xx=x0;xx<=x1;xx++) s += gray[yy*w+xx];
+      const m = s/((x1-x0+1)*(y1-y0+1));
+      out[y*w+x] = gray[y*w+x] + 2*(gray[y*w+x]-m);
+    }
+  }
+  return out;
+}
+// size = target length of the longer side in pixels. trim = fraction cut from each end of the text line.
+function preprocess(src, r, mode, rot, opts){
+  rot = rot || 0; opts = opts || {};
+  const long = Math.max(r.w, r.h);
+  const scale = Math.min(4, (opts.size || 1200)/long);
+  const uw = Math.max(1, Math.round(r.w*scale)), uh = Math.max(1, Math.round(r.h*scale));
+  const swap = Math.abs(rot) === 90;
+  const fw = swap ? uh : uw, h = swap ? uw : uh;
+  const w = Math.max(8, Math.round(fw*(1-2*(opts.trim || 0))));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', {willReadFrequently:true});
+  g.imageSmoothingQuality = 'high';
+  g.save(); g.translate(w/2, h/2); g.rotate(rot*Math.PI/180);
+  g.drawImage(src, r.x, r.y, r.w, r.h, -uw/2, -uh/2, uw, uh);
+  g.restore();
+  const im = g.getImageData(0,0,w,h), d = im.data, n = w*h;
+  const gray = new Uint8ClampedArray(n), hist = new Uint32Array(256);
+  for(let i=0,p=0;i<n;i++,p+=4){
+    const v = (d[p]*299 + d[p+1]*587 + d[p+2]*114)/1000 | 0;
+    gray[i] = v; hist[v]++;
+  }
+  let lo = 0, hi = 255, acc = 0;
+  while(lo < 255 && (acc += hist[lo]) < n*0.02) lo++;
+  acc = 0;
+  while(hi > 0 && (acc += hist[hi]) < n*0.02) hi--;
+  const span = Math.max(1, hi-lo);
+  for(let i=0;i<n;i++) gray[i] = (gray[i]-lo)*255/span;
+  let out = gray;
+  if(mode === 'invert') out = gray.map(v => 255-v);
+  if(mode === 'adaptive') out = adaptive(gray, w, h);
+  if(mode === 'sharp') out = sharpen(gray, w, h);
+  for(let i=0,p=0;i<n;i++,p+=4){ const v = out[i]; d[p]=d[p+1]=d[p+2]=v; d[p+3]=255; }
+  g.putImageData(im,0,0);
+  // Add a margin in the border colour. The OCR engine misreads characters that touch the edge.
+  let ring = 0, cnt = 0;
+  for(let x=0;x<w;x++){ ring += out[x] + out[(h-1)*w+x]; cnt += 2; }
+  for(let y=0;y<h;y++){ ring += out[y*w] + out[y*w+w-1]; cnt += 2; }
+  const fill = Math.round(ring/cnt), pad = Math.max(20, Math.round(Math.min(w,h)*0.2));
+  const pc = document.createElement('canvas'); pc.width = w+2*pad; pc.height = h+2*pad;
+  const pg = pc.getContext('2d');
+  pg.fillStyle = 'rgb('+fill+','+fill+','+fill+')'; pg.fillRect(0,0,pc.width,pc.height);
+  pg.drawImage(c, pad, pad);
+  return pc;
+}
+
+/* ---------- OCR ---------- */
+async function ensureWorker(){
+  if(state.worker) return state.worker;
+  if(!window.Tesseract) throw new Error('The OCR library did not load. Check your connection and reload the page.');
+  status('Loading the OCR engine. The first run downloads a few MB, then it is cached.');
+  state.worker = await Tesseract.createWorker('eng', 1, {
+    logger: m => { if(m.status === 'recognizing text') setBar((state.passIdx + m.progress)/state.passCount); }
+  });
+  await state.worker.setParameters({
+    tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+    preserve_interword_spaces: '0'
+  });
+  return state.worker;
+}
+// Tested on a real dark, blurry door-post photo: plain contrast stretch and sharpening read it,
+// hard black-and-white thresholds mostly did not. Different sizes and edge trims fail in different
+// places, so several are tried and the first one that passes the check digit wins.
+const BASE_PASSES = [
+  {label:'Contrast stretched',            mode:'gray',     size:1200, trim:0.04, psm:'7'},
+  {label:'Sharpened',                      mode:'sharp',    size:1200, trim:0.04, psm:'11'},
+  {label:'Contrast stretched, smaller',    mode:'gray',     size:800,  trim:0.04, psm:'11'},
+  {label:'Sharpened, smaller, untrimmed',  mode:'sharp',    size:800,  trim:0,    psm:'11'},
+  {label:'Adaptive threshold',             mode:'adaptive', size:1200, trim:0.04, psm:'11'},
+  {label:'Inverted',                       mode:'invert',   size:1200, trim:0.04, psm:'7'}
+];
+// A tall crop is probably a sideways VIN, so try the turned versions first. Door posts are often shot sideways.
+function buildPasses(region){
+  const tall = !!state.crop && region.h > region.w*1.3;
+  const rots = tall ? [-90, 90, 0] : [0, -90, 90];
+  const out = [];
+  rots.forEach((rot,i)=>{
+    const set = i === 0 ? BASE_PASSES : BASE_PASSES.slice(0,2);
+    for(const p of set){
+      out.push({...p, rot,
+        psm: (!state.crop && p.psm === '7') ? '11' : p.psm,
+        label: p.label + (rot ? ' · turned '+(rot < 0 ? 'left' : 'right') : '')});
+    }
+  });
+  return out;
+}
+function setBusy(b){
+  state.busy = b;
+  $('readBtn').disabled = b; $('clearCrop').disabled = b;
+  $('cam').disabled = b; $('lib').disabled = b; $('sampleBtn').disabled = b;
+  $('progress').hidden = !b;
+}
+async function readVin(){
+  if(!state.src || state.busy) return;
+  setBusy(true); setBar(0);
+  const t0 = performance.now();
+  const region = state.crop || {x:0, y:0, w:state.src.width, h:state.src.height};
+  const log = []; const seen = new Map(); let best = null; let partial = '';
+  try{
+    await ensureWorker();
+    const passes = buildPasses(region);
+    state.passCount = passes.length;
+    for(let i=0;i<passes.length;i++){
+      const p = passes[i]; state.passIdx = i;
+      status('Pass '+(i+1)+' of '+passes.length+': '+p.label);
+      const cv = preprocess(state.src, region, p.mode, p.rot, {size:p.size, trim:p.trim});
+      await state.worker.setParameters({tessedit_pageseg_mode: p.psm});
+      const {data} = await state.worker.recognize(cv);
+      const cands = candidatesFromText(data.text);
+      const th = document.createElement('canvas'); th.height = 140; th.width = Math.max(1, Math.round(cv.width*140/cv.height));
+      th.getContext('2d').drawImage(cv,0,0,th.width,th.height);
+      log.push({label:p.label, text:data.text.trim(), conf:Math.round(data.confidence), cands, thumb:th.toDataURL('image/jpeg',0.6)});
+      for(const c of cands){ const e = seen.get(c.vin); if(e){ e.hits++; e.exact = e.exact || c.exact; } else seen.set(c.vin,{...c,hits:1}); }
+      if(!partial) partial = partialFromText(data.text);
+      const ok = cands.find(c => c.valid && plausible(c.vin));
+      if(ok){ best = seen.get(ok.vin); break; }
+    }
+    if(!best && seen.size){
+      best = [...seen.values()].sort((a,b)=> (b.hits-a.hits) || (b.exact-a.exact))[0];
+    }
+    const secs = ((performance.now()-t0)/1000);
+    setBar(1);
+    renderLog(log);
+    const rec = {vin: best ? best.vin : null, valid: !!(best && best.valid), edited:false, secs};
+    state.scans.push(rec); state.current = rec;
+    if(best){
+      $('vin').value = best.vin;
+      updateVinUI(true);
+      status('Read in '+secs.toFixed(1)+' s. '+(best.valid ? 'Check digit passes.' : 'Check digit fails, so compare with the photo.'));
+    }else if(partial){
+      $('vin').value = partial;
+      updateVinUI(false);
+      status('Only '+partial.length+' of 17 characters were readable. Crop tighter on the VIN and read again.', 'bad');
+    }else{
+      updateVinUI(false);
+      status('No VIN found. Crop tightly around the VIN and read again.', 'bad');
+    }
+    renderTally();
+  }catch(err){
+    const detail = err && (err.message || (typeof err === 'string' ? err : (err.type ? 'event '+err.type : ''))) || '';
+    status('Reading failed'+(detail ? ': '+detail : '')+'. If this page is open inside a preview or in-app viewer, open it in Safari or Chrome from a hosted link. Those viewers often block the OCR engine\'s downloads.', 'bad');
+  }finally{
+    setBusy(false);
+  }
+}
+
+/* ---------- VIN field UI ---------- */
+function setPill(kind, text){ const p = $('pill'); p.className = 'pill '+kind; p.textContent = text; }
+function updateVinUI(autoDecode){
+  const v = $('vin').value;
+  $('count').textContent = v.length+'/17';
+  const segs = $('segs'), fixes = $('fixes');
+  segs.hidden = true; fixes.hidden = true; fixes.textContent = '';
+  if(!v){ setPill('neutral', state.src ? 'No VIN read yet' : 'Waiting for a photo'); return; }
+  if(v.length < 17){ setPill('warn', (17-v.length)+' characters missing'); return; }
+  if(!VIN_RE.test(v)){ setPill('bad', 'Contains a character a VIN cannot have'); return; }
+  const parts = [['WMI',v.slice(0,3)],['VDS',v.slice(3,8)],['Check',v[8]],['Year',v[9]],['Plant',v[10]],['Serial',v.slice(11)]];
+  segs.textContent = '';
+  for(const [label,val] of parts){
+    const d = document.createElement('div'); d.className = 'seg'+(label==='Check'?' check':'');
+    const b = document.createElement('b'); b.textContent = val;
+    const s = document.createElement('span'); s.textContent = label;
+    d.append(b,s); segs.append(d);
+  }
+  segs.hidden = false;
+  if(checkDigitOK(v)){
+    setPill('good','Check digit OK');
+    if(autoDecode && state.lastDecoded !== v) decode(v);
+    else if(state.lastDecoded === v) $('decode').hidden = false;
+  }else{
+    setPill('warn','Check digit fails');
+    const fx = repairs(v);
+    const note = document.createElement('p'); note.className = 'fixnote';
+    note.textContent = 'The check digit only applies to North American VINs. Newer or imported vehicles can fail it even when the read is correct.';
+    fixes.append(note);
+    if(fx.length){
+      const t = document.createElement('p'); t.className = 'small muted'; t.textContent = 'Single-character fixes that pass the check digit. Tap one only if it matches the photo.';
+      fixes.append(t);
+      for(const f of fx){
+        const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'fixbtn';
+        btn.append(document.createTextNode(f.vin.slice(0,f.pos)));
+        const m = document.createElement('mark'); m.textContent = f.to; btn.append(m);
+        btn.append(document.createTextNode(f.vin.slice(f.pos+1)+'  ('+f.from+' to '+f.to+')'));
+        btn.addEventListener('click', ()=>{ $('vin').value = f.vin; if(state.current) state.current.edited = true; updateVinUI(true); renderTally(); });
+        fixes.append(btn);
+      }
+    }
+    const dbtn = document.createElement('button'); dbtn.type = 'button'; dbtn.className = 'linkbtn';
+    dbtn.textContent = 'Look this VIN up anyway';
+    dbtn.addEventListener('click', ()=>decode(v));
+    fixes.append(dbtn);
+    fixes.hidden = false;
+  }
+}
+$('vin').addEventListener('input', e=>{
+  const el = e.target;
+  const clean = el.value.toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/I/g,'1').replace(/[OQ]/g,'0').slice(0,17);
+  if(clean !== el.value) el.value = clean;
+  if(state.current && state.current.vin !== clean && !state.current.edited){ state.current.edited = true; renderTally(); }
+  updateVinUI(true);
+});
+
+/* ---------- NHTSA decode ---------- */
+async function decode(vin){
+  const box = $('decode'), grid = $('dgrid'), ds = $('dstatus');
+  box.hidden = false; grid.textContent = ''; ds.textContent = 'Looking up the vehicle at NHTSA…';
+  try{
+    const r = await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/'+encodeURIComponent(vin)+'?format=json');
+    if(!r.ok) throw new Error('NHTSA returned '+r.status);
+    const j = await r.json();
+    if($('vin').value !== vin) return;
+    const d = j.Results && j.Results[0];
+    state.lastDecoded = vin;
+    if(!d || !d.Make){
+      ds.textContent = 'NHTSA could not decode this VIN'+(d && d.ErrorText ? ': '+d.ErrorText : '.');
+      return;
+    }
+    const engine = [d.DisplacementL ? (+d.DisplacementL).toFixed(1)+' L' : '', d.EngineCylinders ? d.EngineCylinders+' cyl' : ''].filter(Boolean).join(' · ');
+    const built = [d.PlantCity, d.PlantState, d.PlantCountry].filter(Boolean).join(', ');
+    const rows = [['Year',d.ModelYear],['Make',d.Make],['Model',d.Model],['Trim',d.Trim || d.Series],['Body',d.BodyClass],['Engine',engine],['Fuel',d.FuelTypePrimary],['Drive',d.DriveType],['Built in',built]];
+    ds.textContent = (d.ErrorCode && d.ErrorCode !== '0' && !String(d.ErrorCode).startsWith('0')) ? 'NHTSA flagged this decode: '+d.ErrorText : '';
+    for(const [k,v] of rows){
+      if(!v) continue;
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      grid.append(dt,dd);
+    }
+  }catch(err){
+    ds.textContent = 'Could not reach NHTSA ('+(err.message || 'network error')+'). The VIN above is still usable.';
+  }
+}
+
+/* ---------- log + tally ---------- */
+function renderLog(log){
+  const box = $('log'); box.textContent = '';
+  for(const L of log){
+    const item = document.createElement('div'); item.className = 'logitem';
+    const h = document.createElement('h3');
+    h.textContent = L.label+' · confidence '+L.conf+'%'+(L.cands.some(c=>c.valid) ? ' · valid VIN found' : '');
+    const img = document.createElement('img'); img.src = L.thumb; img.alt = 'Processed image for this pass';
+    const pre = document.createElement('pre'); pre.textContent = L.text || '(no text)';
+    item.append(h,img,pre); box.append(item);
+  }
+}
+function renderTally(){
+  const n = state.scans.length;
+  const valid = state.scans.filter(s=>s.valid).length;
+  const none = state.scans.filter(s=>!s.vin).length;
+  const edited = state.scans.filter(s=>s.edited).length;
+  const avg = state.scans.reduce((a,s)=>a+s.secs,0)/n;
+  $('tally').textContent = n+' scan'+(n===1?'':'s')+' · '+valid+' passed check digit · '+none+' no read · '+edited+' fixed by hand · avg '+avg.toFixed(1)+' s';
+}
+
+/* ---------- sample image ---------- */
+function makeSample(){
+  const c = document.createElement('canvas'); c.width = 1600; c.height = 900;
+  const g = c.getContext('2d');
+  const bg = g.createLinearGradient(0,0,1600,900); bg.addColorStop(0,'#2b3036'); bg.addColorStop(1,'#1b1f24');
+  g.fillStyle = bg; g.fillRect(0,0,1600,900);
+  g.save(); g.translate(800,450); g.rotate(-0.035);
+  g.fillStyle = '#c4c9ce'; g.fillRect(-640,-110,1280,220);
+  g.strokeStyle = '#8b9299'; g.lineWidth = 4; g.strokeRect(-640,-110,1280,220);
+  g.fillStyle = '#4f555c'; g.font = '600 112px "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('1HGCM82633A004352', 0, 6);
+  for(let i=0;i<2600;i++){
+    g.fillStyle = 'rgba('+(Math.random()<.5?'255,255,255':'0,0,0')+','+(Math.random()*.12).toFixed(3)+')';
+    g.fillRect(-640+Math.random()*1280, -110+Math.random()*220, 2, 2);
+  }
+  const gl = g.createLinearGradient(-640,-110,640,110);
+  gl.addColorStop(0,'rgba(255,255,255,0)'); gl.addColorStop(.55,'rgba(255,255,255,.28)'); gl.addColorStop(.7,'rgba(255,255,255,0)');
+  g.fillStyle = gl; g.fillRect(-640,-110,1280,220);
+  g.restore();
+  return c;
+}
+
+/* ---------- wiring ---------- */
+$('cam').addEventListener('change', e=>{ loadFile(e.target.files[0]); e.target.value = ''; });
+$('lib').addEventListener('change', e=>{ loadFile(e.target.files[0]); e.target.value = ''; });
+$('readBtn').addEventListener('click', readVin);
+$('clearCrop').addEventListener('click', ()=>{ state.crop = null; drawPreview(); });
+$('sampleBtn').addEventListener('click', ()=>{
+  const c = makeSample(); setSource(c, c.width, c.height); readVin();
+});
+updateVinUI(false);
+</script>
+</body>
+</html>
