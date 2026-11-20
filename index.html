@@ -173,6 +173,9 @@ label.linkbtn{display:inline-block}
 .vr-mpgn{display:flex;gap:12px;flex:none}
 .vr-mpgn span{display:grid;text-align:center;font-size:11px;color:var(--vr-muted);text-transform:uppercase;letter-spacing:.05em}
 .vr-mpgn b{font:700 18px var(--vr-mono);color:var(--vr-ink)}
+.vr-pdf{justify-self:start;margin-top:8px;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--vr-accent);background:var(--vr-surface);color:var(--vr-accent);font:600 15px inherit;font-family:inherit;cursor:pointer}
+.vr-pdf::before{content:"";display:inline-block;width:14px;height:16px;margin:0 8px -3px 0;border:2px solid currentColor;border-radius:2px;box-sizing:border-box;background:linear-gradient(currentColor,currentColor) 50% 40%/7px 2px no-repeat,linear-gradient(currentColor,currentColor) 50% 65%/7px 2px no-repeat}
+.vr-pdf[disabled]{opacity:.6}
 
 /* tabs, lists, sheets */
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;position:sticky;top:max(6px,env(safe-area-inset-top,0px));z-index:5}
@@ -218,7 +221,7 @@ body.noscroll{overflow:hidden}
 <main>
   <header>
     <h1>VIN Scanner</h1>
-    <span class="tag">v2.0.0</span>
+    <span class="tag">v2.1.0</span>
   </header>
   <nav class="tabs" aria-label="Sections">
     <button type="button" data-view="scan" aria-current="page">Scan</button>
@@ -1129,7 +1132,8 @@ function draw(el,st){
     h=`<div class="vr-head"><div class="vr-title">${e([f.ModelYear,f.Make,f.Model].filter(Boolean).join(' ')||'Unknown vehicle')}</div>
      <div class="vr-sub">${e([f.Trim||f.Series,f.BodyClass,f.DriveType].filter(Boolean).join(' · '))}</div>
      <div class="vr-sub">${e([f.DisplacementL?(+f.DisplacementL).toFixed(1)+' L':'',f.EngineCylinders?f.EngineCylinders+' cyl':'',f.FuelTypePrimary,f.TransmissionStyle].filter(Boolean).join(' · '))}</div>
-     ${s.error?`<div class="vr-note">NHTSA note: ${e(s.error)}</div>`:''}</div>
+     ${s.error?`<div class="vr-note">NHTSA note: ${e(s.error)}</div>`:''}
+     <button type="button" class="vr-pdf">Save as PDF</button></div>
      ${s.ok?recallHtml(st)+specHtml(s)+complaintHtml(st)+ratingHtml(st)+fuelHtml(st):specHtml(s)}${bdHtml(st.vin)}
      <div class="vr-note">Decoded ${e(new Date(s.at).toLocaleDateString())} from NHTSA. Recalls, complaints and ratings are looked up live.</div>`;
   }
@@ -1146,7 +1150,9 @@ async function mount(el,vin,o){
   const C=CACHE[vin]||(CACHE[vin]={});
   const st={vin,spec:o.spec&&o.spec.fields?o.spec:(C.spec||null)};
   for(const k of ['recalls','complaints','ratings','fuel'])if(C[k])st[k]=C[k];
-  el.classList.add('vr');el._vr=st;
+  el.classList.add('vr');el._vr=st;st.info=o.pdfInfo||null;
+  if(!el._vrBound){el._vrBound=true;el.addEventListener('click',ev=>{if(ev.target.closest('.vr-pdf'))pdf(el._vr,ev.target.closest('.vr-pdf'))})}
+  loadPdfLib().catch(()=>{});
   draw(el,st);
   if(!st.spec){
     try{st.spec=await decode(vin);C.spec=st.spec}catch(x){st.err='Could not reach NHTSA to decode this VIN ('+(x.name==='AbortError'?'timed out':x.message)+'). Check the connection and try again.';draw(el,st);return st}
@@ -1161,6 +1167,70 @@ async function mount(el,vin,o){
   await Promise.all([go('recalls',recalls(st.spec)),go('complaints',complaints(st.spec)),go('ratings',ratings(st.spec)),go('fuel',fuel(st.spec))]);
   if(o.onSummary)try{o.onSummary({recalls:st.recalls?st.recalls.length:null,complaints:st.complaints?st.complaints.length:null,campaigns:(st.recalls||[]).map(r=>r.NHTSACampaignNumber),at:new Date().toISOString()})}catch(x){}
   return st;
+}
+/* ---- PDF of the whole report (jsPDF + autotable, loaded from the CDN the first time) ---- */
+const PDFLIBS=['https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js'];
+let pdfP=null;
+function loadPdfLib(){
+  if(window.jspdf&&window.jspdf.jsPDF&&window.jspdf.jsPDF.API.autoTable)return Promise.resolve();
+  if(pdfP)return pdfP;
+  const one=u=>new Promise((res,rej)=>{const t=document.createElement('script');t.src=u;t.onload=res;t.onerror=()=>{pdfP=null;rej(new Error('load'))};document.head.appendChild(t)});
+  return pdfP=one(PDFLIBS[0]).then(()=>one(PDFLIBS[1]));
+}
+/* standard PDF fonts only cover Latin-1: swap anything else out */
+const L1=v=>String(v==null?'':v).replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/[\u2013\u2014]/g,'-').replace(/\u2026/g,'...').replace(/[^\x00-\xff]/g,'');
+const starTxt=n=>{n=parseInt(n,10);return n>0&&n<=5?n+' of 5 stars':'Not rated'};
+async function pdf(st,btn){
+  if(!st||!st.spec)return;
+  const old=btn.textContent;
+  if(!(window.jspdf&&window.jspdf.jsPDF&&window.jspdf.jsPDF.API.autoTable)){
+    btn.textContent='Getting the PDF maker...';btn.disabled=true;
+    try{await loadPdfLib()}catch(x){btn.textContent=old;btn.disabled=false;alert('Could not load the PDF maker. Check the internet connection and try again.');return}
+    btn.textContent=old;btn.disabled=false;
+  }
+  const f=st.spec.fields,{jsPDF}=window.jspdf,doc=new jsPDF({unit:'pt',format:'letter'});
+  const W=doc.internal.pageSize.getWidth(),M=40,name=[f.ModelYear,f.Make,f.Model].filter(Boolean).join(' ')||'Vehicle';
+  const ink=[19,32,44],mute=[90,100,110],head=[0,52,120];
+  let y=M;
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(...ink);doc.text(L1(name+(f.Trim||f.Series?' '+(f.Trim||f.Series):'')),M,y+6);y+=24;
+  doc.setFont('courier','bold');doc.setFontSize(13);doc.text(L1(st.vin),M,y);y+=16;
+  doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(...mute);
+  doc.text(L1('Vehicle report printed '+new Date().toLocaleDateString()+'. Specs decoded from NHTSA on '+new Date(st.spec.at).toLocaleDateString()+'.'),M,y);y+=10;
+  const T=(title,body,opt)=>{
+    if(!body.length)return;
+    if(y>doc.internal.pageSize.getHeight()-110){doc.addPage();y=M-14}
+    doc.autoTable(Object.assign({startY:y+14,head:[[{content:L1(title),colSpan:(body[0]||[]).length||2}]],body:body.map(r=>r.map(L1)),margin:{left:M,right:M},
+      theme:'grid',showHead:'everyPage',rowPageBreak:'avoid',styles:{fontSize:9,cellPadding:4,textColor:ink,lineColor:[210,216,222],lineWidth:.5,overflow:'linebreak'},
+      headStyles:{fillColor:head,textColor:255,fontStyle:'bold',fontSize:10.5},columnStyles:{0:{cellWidth:170,textColor:mute}}},opt||{}));
+    y=doc.lastAutoTable.finalY;
+  };
+  if(typeof st.info==='function'){const info=(st.info()||[]).filter(r=>r&&r[1]);if(info.length)T('Customer and vehicle record',info)}
+  for(const [title,list] of GROUPS)T(title,list.filter(([k])=>f[k]).map(([k,l])=>[l,f[k]]));
+  const other=Object.keys(f).filter(k=>!KNOWN.has(k));T('Other details',other.map(k=>[human(k),f[k]]));
+  const b=breakdown(st.vin);
+  if(b)T('VIN breakdown',[['Maker code (WMI)',b.wmi+(b.country?' - '+b.country:'')],['Vehicle descriptor',b.vds],['Check digit',b.check+(b.checkOK?' - OK':' - should be '+b.checkWant)],
+    ['Model year code',b.yearCode+(b.years.length?' - '+b.years.join(' or '):'')],['Plant code',b.plant],['Serial number',b.serial]]);
+  if(st.fuel&&st.fuel.length)T('Fuel economy (EPA)',st.fuel.map(x=>[x.model+' - '+x.option,x.city+' city / '+x.hwy+' hwy / '+x.comb+' combined mpg ('+x.fuel+')']));
+  if(st.ratings&&st.ratings.length)for(const r of st.ratings)T('Crash ratings - '+r.VehicleDescription,[['Overall',starTxt(r.OverallRating)],['Frontal crash',starTxt(r.OverallFrontCrashRating)],['Side crash',starTxt(r.OverallSideCrashRating)],['Rollover',starTxt(r.RolloverRating)]].concat(r.RolloverPossibility?[['Rollover risk',Math.round(r.RolloverPossibility*100)+'%']]:[]));
+  if(st.recalls){
+    if(!st.recalls.length)T('Recalls',[['Recalls','None on file for this year, make and model']]);
+    else{T('Recalls ('+st.recalls.length+') for every '+st.label+' - check nhtsa.gov/recalls with the VIN to see which are still open',
+      st.recalls.map(r=>[r.ReportReceivedDate+'\nCampaign '+r.NHTSACampaignNumber+(r.parkIt?'\nDO NOT DRIVE':'')+(r.parkOutSide?'\nPARK OUTSIDE':''),
+        r.Component+'\n\nProblem: '+r.Summary+'\n\nRisk: '+r.Consequence+'\n\nFix: '+r.Remedy]),{columnStyles:{0:{cellWidth:110,textColor:mute}}})}
+  }
+  if(st.complaints&&st.complaints.length){
+    const by={};for(const x of st.complaints)for(const p of String(x.components||'Unknown').split(','))by[p.trim()]=(by[p.trim()]||0)+1;
+    T('Owner complaints - '+st.complaints.length+' filed with NHTSA, most reported problems',Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([k,n])=>[tc(k),String(n)]),{columnStyles:{0:{cellWidth:300,textColor:ink}}});
+  }
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...mute);
+    doc.text(L1(name+'  -  '+st.vin),M,doc.internal.pageSize.getHeight()-20);doc.text('Page '+i+' of '+n,W-M,doc.internal.pageSize.getHeight()-20,{align:'right'})}
+  const file=('VIN '+st.vin+' '+name).replace(/[^A-Za-z0-9 -]/g,'').trim().replace(/\s+/g,'-')+'.pdf';
+  const blob=doc.output('blob');
+  /* phones: open the share sheet (Print, Save to Files, Messages, Mail); computers: download the file */
+  try{const fl=new File([blob],file,{type:'application/pdf'});
+    if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[fl]})){await navigator.share({files:[fl],title:name+' specs'});return}}catch(x){if(x&&x.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
 }
 /* flat text of a report, for CSV export */
 function flat(spec){const f=(spec&&spec.fields)||{};return f}
@@ -1180,6 +1250,8 @@ const vtitle=r=>{const f=(r&&r.spec&&r.spec.fields)||{};return [f.ModelYear,f.Ma
 const vsub=r=>{const f=(r&&r.spec&&r.spec.fields)||{};return [f.Trim||f.Series,f.DisplacementL?(+f.DisplacementL).toFixed(1)+' L':'',f.DriveType].filter(Boolean).join(' · ')};
 const fmtPhone=s=>{const d=String(s||'').replace(/\D/g,'').replace(/^1(?=\d{10}$)/,'');return d.length===10?'('+d.slice(0,3)+')'+d.slice(3,6)+'-'+d.slice(6):String(s||'')};
 const fmtDay=iso=>iso?new Date(iso).toLocaleDateString():'';
+const pdfInfo=vin=>()=>{const r=findVin(vin);if(!r)return[];const c=custOf(r.customerId)||{};
+  return [['Customer',c.name],['Phone',fmtPhone(c.phone)],['Email',c.email],['Address',c.address],['Plate',r.plate],['Mileage',r.mileage?Number(r.mileage).toLocaleString():''],['Notes',r.notes]]};
 const vinsOf=cid=>DB.vins.filter(v=>v.customerId===cid);
 function toast(m){let t=$('toast');if(t)t.remove();t=document.createElement('div');t.id='toast';t.setAttribute('role','status');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function download(name,text,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
@@ -1203,7 +1275,7 @@ let cur={vin:''};
 function decode(vin){
   $('decode').hidden=false;state.lastDecoded=vin;
   const saved=findVin(vin);cur={vin};
-  VR.mount($('vrBox'),vin,{spec:saved&&saved.spec,
+  VR.mount($('vrBox'),vin,{spec:saved&&saved.spec,pdfInfo:pdfInfo(vin),
     onSpec:s=>{cur.spec=s;const r=findVin(vin);if(r){r.spec=s;saveDB()}},
     onSummary:s=>{cur.summary=s;const r=findVin(vin);if(r){r.summary=s;saveDB()}}});
   drawSaveBox();
@@ -1295,7 +1367,7 @@ function openVin(vin){sheet(el=>{
   const pk=id=>{r.customerId=id;saveDB();custPicker('vinPick',id,pk)};custPicker('vinPick',r.customerId,pk);
   mountSaved(r,el.querySelector('#vinRep'));
 })}
-function mountSaved(r,host,fresh){VR.mount(host,r.vin,{spec:fresh?null:r.spec,fresh,onSpec:s=>{r.spec=s;saveDB()},onSummary:s=>{r.summary=s;saveDB()}})}
+function mountSaved(r,host,fresh){VR.mount(host,r.vin,{spec:fresh?null:r.spec,fresh,pdfInfo:pdfInfo(r.vin),onSpec:s=>{r.spec=s;saveDB()},onSummary:s=>{r.summary=s;saveDB()}})}
 function openCust(id){sheet(el=>{
   const c=custOf(id);if(!c){closeSheet();return}const vs=vinsOf(id);
   el.innerHTML=sheetHead(c.name||'New customer')+`<div class="sbody"><div class="card">
