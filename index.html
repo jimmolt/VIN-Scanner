@@ -221,7 +221,7 @@ body.noscroll{overflow:hidden}
 <main>
   <header>
     <h1>VIN Scanner</h1>
-    <span class="tag">v2.1.0</span>
+    <span class="tag">v2.2.0</span>
   </header>
   <nav class="tabs" aria-label="Sections">
     <button type="button" data-view="scan" aria-current="page">Scan</button>
@@ -967,7 +967,7 @@ const GROUPS=[
   ['ElectrificationLevel','Electrification'],['BatteryType','Battery type'],['BatteryKWh','Battery kWh'],['BatteryKWh_to','Battery kWh (up to)'],
   ['BatteryV','Battery volts'],['BatteryV_to','Battery volts (up to)'],['BatteryA','Battery amps'],['BatteryCells','Battery cells'],['BatteryModules','Battery modules'],
   ['BatteryPacks','Battery packs'],['BatteryInfo','Battery info'],['ChargerLevel','Charger level'],['ChargerPowerKW','Charger kW'],['EVDriveUnit','EV drive unit']]],
- ['Drivetrain and chassis',[['DriveType','Drive'],['TransmissionStyle','Transmission'],['TransmissionSpeeds','Speeds'],['Axles','Axles'],
+ ['Drivetrain and chassis',[['DriveType','Drive'],['Axles','Axles'],
   ['AxleConfiguration','Axle setup'],['BrakeSystemType','Brakes'],['BrakeSystemDesc','Brake details'],['CombinedBrakingSystem','Combined braking'],
   ['WheelBaseType','Wheelbase type'],['WheelBaseShort','Wheelbase (in)'],['WheelBaseLong','Wheelbase long (in)'],['TrackWidth','Track width (in)'],
   ['Wheels','Wheels'],['WheelSizeFront','Front wheel (in)'],['WheelSizeRear','Rear wheel (in)'],['SteeringLocation','Steering'],['TopSpeedMPH','Top speed (mph)']]],
@@ -986,7 +986,41 @@ const GROUPS=[
   ['ParkAssist','Park assist'],['AutomaticPedestrianAlertingSound','Pedestrian alert sound'],['DriverAssist','Driver assist'],['SAEAutomationLevel','Automation level'],
   ['SAEAutomationLevel_to','Automation level (up to)'],['ActiveSafetySysNote','Safety system note']]]
 ];
-const KNOWN=new Set(GROUPS.flatMap(g=>g[1].map(f=>f[0])));
+const TRANS=[['TransmissionStyle','Type (NHTSA)'],['TransmissionSpeeds','Speeds (NHTSA)'],['DriveType','Drive']];
+const KNOWN=new Set(GROUPS.flatMap(g=>g[1].map(f=>f[0])).concat(TRANS.map(f=>f[0])));
+/* EPA writes transmissions like "Automatic (S10)" or "Automatic (AM-S7)". Spell those out. */
+function transPlain(t){
+  t=String(t||'').trim();let m;
+  if((m=t.match(/\(AM-S(\d+)\)/)))return'Automated manual (dual-clutch type), '+m[1]+'-speed, with manual shift mode';
+  if((m=t.match(/\(AM(\d+)\)/)))return'Automated manual (dual-clutch type), '+m[1]+'-speed';
+  if((m=t.match(/\(AV-S(\d+)\)/)))return'CVT (continuously variable) with '+m[1]+' simulated shift points';
+  if(/\(AV\)|variable gear/i.test(t))return'CVT (continuously variable)';
+  if(/\(A1\)/.test(t))return'Single-speed (electric drive)';
+  if((m=t.match(/Automatic \(S(\d+)\)/)))return'Automatic, '+m[1]+'-speed, with manual shift mode';
+  if((m=t.match(/Automatic \(A(\d+)\)/)))return'Automatic, '+m[1]+'-speed';
+  if((m=t.match(/Automatic (\d+)-spd/)))return'Automatic, '+m[1]+'-speed';
+  if((m=t.match(/Manual (\d+)-spd/)))return'Manual, '+m[1]+'-speed';
+  if((m=t.match(/Manual \(M(\d+)\)/)))return'Manual, '+m[1]+'-speed';
+  return t;
+}
+const TDSCR={CVT:'Continuously variable',SIL:'Shift indicator light',CLKUP:'Torque converter lockup','2MODE':'Two-mode hybrid','3MODE':'Three-mode',EMS:'Engine management shift',
+  'Creeper':'Creeper (extra-low) gear',FFS:'Feedback fuel system',VLKUP:'Variable lockup',L1:'Lockup in first gear',SPD:'Speed-sensitive','4-MODE':'Four-mode'};
+const transDscr=d=>String(d||'').split(/[,;\s]+/).filter(Boolean).map(x=>TDSCR[x]||x).join(', ');
+const isTransRecall=r=>/POWER TRAIN|TRANSMISSION|CLUTCH|DRIVESHAFT|AXLE/i.test(r.Component||'');
+const isTransComplaint=c=>/POWER TRAIN/i.test(c.components||'');
+/* rows for the transmission section, shared by the screen and the PDF */
+function transRows(st){
+  const f=st.spec.fields,rows=TRANS.filter(([k])=>f[k]).map(([k,l])=>[l,f[k]]);
+  if(st.fuel&&st.fuel.length){
+    const seen=new Set();
+    for(const x of st.fuel){const key=x.trany+'|'+x.tdesc;if(!x.trany||seen.has(key))continue;seen.add(key);
+      rows.push(['Transmission (EPA'+(st.fuel.length>1?', '+x.model:'')+')',transPlain(x.trany)+(x.tdesc?' · '+transDscr(x.tdesc):'')+(x.ss==='Y'?' · engine start-stop':'')]);
+      if(x.eng)rows.push(['Engine notes (EPA)',x.eng]);}
+  }
+  if(st.recalls)rows.push(['Drivetrain recalls',String(st.recalls.filter(isTransRecall).length)]);
+  if(st.complaints)rows.push(['Power train complaints',String(st.complaints.filter(isTransComplaint).length)]);
+  return rows;
+}
 const SKIP=new Set(['ErrorCode','ErrorText','AdditionalErrorText','PossibleValues','SuggestedVIN','VIN','VehicleDescriptor','MakeID','ModelID','ManufacturerId',
  'NCSAMapExcApprovedBy','NCSAMapExcApprovedOn','NCSAMappingException','NCSANote','NCSABodyType','NCSAMake','NCSAModel','CashForClunkers','NonLandUse']);
 const human=k=>k.replace(/_to$/,' (up to)').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g,'$1 $2');
@@ -1053,7 +1087,7 @@ async function fuel(s){
     const opts=arr((await getJSON(FE+'menu/options?year='+encodeURIComponent(y)+'&make='+encodeURIComponent(mk)+'&model='+encodeURIComponent(m.value),H)).menuItem);
     let pick=opts.filter(o=>(!cyl||o.text.includes(cyl+' cyl'))&&(!disp||o.text.includes(disp+' L')));if(!pick.length)pick=opts;
     for(const o of pick.slice(0,4)){
-      try{const v=await getJSON(FE+o.value,H);out.push({model:m.value,option:o.text,city:v.city08,hwy:v.highway08,comb:v.comb08,fuel:v.fuelType,tank:'',cost:v.fuelCost08,cls:v.VClass,id:o.value})}catch(x){}
+      try{const v=await getJSON(FE+o.value,H);out.push({model:m.value,option:o.text,city:v.city08,hwy:v.highway08,comb:v.comb08,fuel:v.fuelType,cost:v.fuelCost08,cls:v.VClass,id:o.value,trany:v.trany,tdesc:v.trans_dscr,ss:v.startStop,eng:v.eng_dscr,drive:v.drive})}catch(x){}
     }
     if(out.length>=6)break;
   }
@@ -1063,11 +1097,21 @@ const dt=s=>{const m=String(s||'').match(/(\d+)\/(\d+)\/(\d+)/);return m?new Dat
 
 /* ---- drawing ---- */
 const row=(k,v)=>`<div class="vr-r"><span>${e(k)}</span><b>${e(v)}</b></div>`;
-function specHtml(s){
-  const f=s.fields;let h='';
+function transHtml(st){
+  const rows=transRows(st),busy=st.spec.ok&&(st.fuel===undefined||st.recalls===undefined);
+  const tr=st.recalls?st.recalls.filter(isTransRecall):[],tc2=st.complaints?st.complaints.filter(isTransComplaint):[];
+  const recent=[...tc2].sort((a,b)=>dt(b.dateComplaintFiled)-dt(a.dateComplaintFiled)).slice(0,8);
+  return `<details class="vr-sec" open><summary>Transmission${busy?'<span class="vr-spin" style="margin-left:auto" aria-label="Loading"></span>':''}</summary><div class="vr-grid">${rows.map(r=>row(r[0],r[1])).join('')}</div>
+   ${tr.length?`<details class="vr-item"><summary><b>Drivetrain recalls (${tr.length})</b></summary>${tr.map(x=>`<p><b>${e(x.ReportReceivedDate)} · ${e(x.Component)}</b><br>${e(x.Summary)}<br><i>Fix:</i> ${e(x.Remedy)}</p>`).join('')}</details>`:''}
+   ${recent.length?`<details class="vr-item"><summary><b>Latest power train complaints (${tc2.length} total)</b></summary>${recent.map(x=>`<p><b>${e(x.dateComplaintFiled)}</b><br>${e(x.summary)}</p>`).join('')}</details>`:''}
+   <div class="vr-note">The exact transmission model code (for example 6L80 or 10R80) and fluid spec are not in the free NHTSA or EPA data.</div></details>`;
+}
+function specHtml(st){
+  const s=st.spec,f=s.fields;let h='';
   for(const [title,list] of GROUPS){
     const rows=list.filter(([k])=>f[k]).map(([k,l])=>row(l,f[k])).join('');
     if(rows)h+=`<details class="vr-sec"${title==='Vehicle'||title==='Engine and fuel'?' open':''}><summary>${e(title)}<i>${list.filter(([k])=>f[k]).length}</i></summary><div class="vr-grid">${rows}</div></details>`;
+    if(title==='Engine and fuel')h+=transHtml(st);
   }
   const other=Object.keys(f).filter(k=>!KNOWN.has(k));
   if(other.length)h+=`<details class="vr-sec"><summary>Other details<i>${other.length}</i></summary><div class="vr-grid">${other.map(k=>row(human(k),f[k])).join('')}</div></details>`;
@@ -1114,7 +1158,7 @@ function ratingHtml(st){
 function fuelHtml(st){
   if(st.fuel===undefined)return loading('Fuel economy');
   if(st.fuel===null||!st.fuel.length)return `<details class="vr-sec"><summary>Fuel economy</summary><div class="vr-note">No EPA match found. Trucks over 8,500 lb GVWR are not rated.</div></details>`;
-  return `<details class="vr-sec"><summary>Fuel economy (EPA)<i>${st.fuel.length}</i></summary>${st.fuel.map(x=>`<div class="vr-mpg"><div><b>${e(x.model)}</b><span>${e(x.option)} · ${e(x.fuel)}</span></div>
+  return `<details class="vr-sec"><summary>Fuel economy (EPA)<i>${st.fuel.length}</i></summary>${st.fuel.map(x=>`<div class="vr-mpg"><div><b>${e(x.model)}</b><span>${e(x.option)} · ${e(x.fuel)}${x.trany?' · '+e(x.trany):''}</span></div>
    <div class="vr-mpgn"><span><b>${e(x.city)}</b>city</span><span><b>${e(x.hwy)}</b>hwy</span><span><b>${e(x.comb)}</b>comb</span></div></div>`).join('')}
    <div class="vr-note">From fueleconomy.gov. If more than one is listed, pick the one that matches the vehicle.</div></details>`;
 }
@@ -1134,7 +1178,7 @@ function draw(el,st){
      <div class="vr-sub">${e([f.DisplacementL?(+f.DisplacementL).toFixed(1)+' L':'',f.EngineCylinders?f.EngineCylinders+' cyl':'',f.FuelTypePrimary,f.TransmissionStyle].filter(Boolean).join(' · '))}</div>
      ${s.error?`<div class="vr-note">NHTSA note: ${e(s.error)}</div>`:''}
      <button type="button" class="vr-pdf">Save as PDF</button></div>
-     ${s.ok?recallHtml(st)+specHtml(s)+complaintHtml(st)+ratingHtml(st)+fuelHtml(st):specHtml(s)}${bdHtml(st.vin)}
+     ${s.ok?recallHtml(st)+specHtml(st)+complaintHtml(st)+ratingHtml(st)+fuelHtml(st):specHtml(st)}${bdHtml(st.vin)}
      <div class="vr-note">Decoded ${e(new Date(s.at).toLocaleDateString())} from NHTSA. Recalls, complaints and ratings are looked up live.</div>`;
   }
   /* keep open/closed state of sections across redraws */
@@ -1205,7 +1249,10 @@ async function pdf(st,btn){
     y=doc.lastAutoTable.finalY;
   };
   if(typeof st.info==='function'){const info=(st.info()||[]).filter(r=>r&&r[1]);if(info.length)T('Customer and vehicle record',info)}
-  for(const [title,list] of GROUPS)T(title,list.filter(([k])=>f[k]).map(([k,l])=>[l,f[k]]));
+  for(const [title,list] of GROUPS){T(title,list.filter(([k])=>f[k]).map(([k,l])=>[l,f[k]]));
+    if(title==='Engine and fuel'){T('Transmission',transRows(st).map(r=>[r[0],String(r[1]).replace(/ · /g,' - ')]));
+      const tr=(st.recalls||[]).filter(isTransRecall);
+      if(tr.length)T('Drivetrain recalls',tr.map(r=>[r.ReportReceivedDate+'\nCampaign '+r.NHTSACampaignNumber,r.Component+'\n\nProblem: '+r.Summary+'\n\nFix: '+r.Remedy]),{columnStyles:{0:{cellWidth:110,textColor:mute}}});}}
   const other=Object.keys(f).filter(k=>!KNOWN.has(k));T('Other details',other.map(k=>[human(k),f[k]]));
   const b=breakdown(st.vin);
   if(b)T('VIN breakdown',[['Maker code (WMI)',b.wmi+(b.country?' - '+b.country:'')],['Vehicle descriptor',b.vds],['Check digit',b.check+(b.checkOK?' - OK':' - should be '+b.checkWant)],
