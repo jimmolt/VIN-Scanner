@@ -126,14 +126,106 @@ summary{cursor:pointer;font-weight:500}
 .btn.camshot{min-height:68px;font-size:21px;border-radius:14px;letter-spacing:.01em}
 .linkrow{display:flex;flex-wrap:wrap;gap:4px 18px}
 label.linkbtn{display:inline-block}
+:root{--vr-line:var(--line);--vr-muted:var(--muted);--vr-surface:var(--surface);--vr-bg2:var(--bg);--vr-accent:var(--accent);--vr-bad:var(--bad);--vr-bad-bg:var(--bad-bg);--vr-ink:var(--fg);--vr-mono:var(--font-mono);--vr-display:var(--font-body)}
+/* full VIN report */
+.vr{display:grid;gap:8px;min-width:0}
+.vr-head{display:grid;gap:2px;padding-bottom:4px}
+.vr-title{font:700 19px/1.25 var(--vr-display);letter-spacing:-.01em}
+.vr-sub{color:var(--vr-muted);font-size:14px}
+.vr-note{color:var(--vr-muted);font-size:13px;line-height:1.4}
+.vr-note a{color:var(--vr-accent)}
+.vr .vr-bad{color:var(--vr-bad)}
+.vr-sec{border:1px solid var(--vr-line);border-radius:10px;background:var(--vr-surface);padding:0 12px;min-width:0}
+.vr-sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;font-weight:700;font-size:15px}
+.vr-sec>summary::-webkit-details-marker{display:none}
+.vr-sec>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--vr-muted);border-bottom:2px solid var(--vr-muted);transform:rotate(45deg);margin:-4px 4px 0 0;flex:none}
+.vr-sec[open]>summary::after{transform:rotate(225deg);margin-top:4px}
+.vr-sec>summary i{font-style:normal;margin-left:auto;font:600 12px var(--vr-mono);padding:2px 8px;border-radius:999px;background:var(--vr-bg2);color:var(--vr-muted)}
+.vr-sec>summary i.vr-bad{background:var(--vr-bad-bg);color:var(--vr-bad)}
+.vr-sec[open]{padding-bottom:12px}
+.vr-sec>.vr-note{margin-bottom:8px}
+.vr-load{display:flex;align-items:center;justify-content:space-between;min-height:46px;font-weight:700;font-size:15px}
+.vr-spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--vr-line);border-top-color:var(--vr-accent);animation:vrspin .8s linear infinite}
+@keyframes vrspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.vr-spin{animation:none}}
+.vr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0 18px}
+.vr-r{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--vr-line);font-size:14px;min-width:0}
+.vr-r span{color:var(--vr-muted);flex:none;max-width:48%}
+.vr-r b{font-weight:600;text-align:right;overflow-wrap:anywhere}
+.vr-item{border-top:1px solid var(--vr-line);padding:2px 0}
+.vr-item>summary{cursor:pointer;display:grid;gap:1px;padding:8px 0;font-size:14px}
+.vr-item>summary span{color:var(--vr-muted);font-size:12.5px}
+.vr-item em{font-style:normal;font-weight:700}
+.vr-item p{margin:0 0 8px;font-size:14px;line-height:1.45}
+.vr-bars{display:grid;gap:5px;margin:6px 0 8px}
+.vr-bar{display:grid;grid-template-columns:minmax(0,1fr) 34% 36px;align-items:center;gap:8px;font-size:13px}
+.vr-bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vr-bar i{display:block;height:8px;border-radius:4px;background:var(--vr-bg2);position:relative;overflow:hidden}
+.vr-bar i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--vr-accent);border-radius:4px}
+.vr-bar b{font:600 12px var(--vr-mono);text-align:right}
+.vr-rate{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:start;border-top:1px solid var(--vr-line);padding:10px 0}
+.vr-rate:not(:has(img)){grid-template-columns:1fr}
+.vr-rate img{width:110px;border-radius:6px;background:#fff}
+.vr-rate .vr-grid{grid-template-columns:1fr;margin-top:4px}
+.vr-mpg{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--vr-line);padding:8px 0;font-size:14px}
+.vr-mpg>div:first-child{display:grid;min-width:0}
+.vr-mpg>div:first-child span{color:var(--vr-muted);font-size:12.5px}
+.vr-mpgn{display:flex;gap:12px;flex:none}
+.vr-mpgn span{display:grid;text-align:center;font-size:11px;color:var(--vr-muted);text-transform:uppercase;letter-spacing:.05em}
+.vr-mpgn b{font:700 18px var(--vr-mono);color:var(--vr-ink)}
+
+/* tabs, lists, sheets */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;position:sticky;top:max(6px,env(safe-area-inset-top,0px));z-index:5}
+.tabs button{min-height:42px;border:0;border-radius:7px;background:none;color:var(--muted);font:600 14px var(--font-body);cursor:pointer;padding:0 4px}
+.tabs button[aria-current=page]{background:var(--accent);color:var(--accent-fg)}
+.tabs i{font:500 11px var(--font-mono);font-style:normal;opacity:.8}
+.view{display:grid;gap:14px}
+.vh{font-size:18px}
+.lrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.list{display:grid;gap:8px}
+.lcard{display:grid;gap:3px;text-align:left;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--fg);font:inherit;cursor:pointer}
+.lcard b{font-weight:600}
+.mono{font:600 14px var(--font-mono);letter-spacing:.04em;overflow-wrap:anywhere}
+.mono.big{font-size:18px}
+.empty{text-align:center;padding:20px 0}
+#vq,#cq,.fl input,.fl textarea{width:100%;padding:11px 12px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg);font:16px var(--font-body)}
+.fl{display:grid;gap:5px;margin-top:10px}
+.fl>span{font:600 11.5px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.btn.sm{min-height:40px;font-size:14px}
+.btn.danger{color:var(--bad)}
+#saveCard:has(#saveBox:empty){display:none}
+#decode[hidden]+#saveCard{display:none}
+#saveBox{display:grid;gap:4px}
+#saveBox .btn.primary{margin-top:12px}
+.savedline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.picked{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.picklist{display:grid;gap:6px;margin-top:6px}
+.pick{display:grid;text-align:left;gap:1px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);font:inherit;cursor:pointer;min-height:44px}
+.pick span{color:var(--muted);font-size:13px}
+.pick.add{color:var(--accent);font-weight:600}
+.mt{margin-top:12px}
+#sheet{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.shead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:max(10px,env(safe-area-inset-top,0px)) 16px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+.shead b{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.back{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;min-height:40px;padding:0 12px;font:600 14px var(--font-body);cursor:pointer;flex:none}
+.sbody{max-width:560px;margin:0 auto;padding:14px 16px max(30px,env(safe-area-inset-bottom,0px));display:grid;gap:12px}
+body.noscroll{overflow:hidden}
+#toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:99;max-width:90vw;text-align:center}
 </style>
 </head>
 <body>
 <main>
   <header>
     <h1>VIN Scanner</h1>
-    <span class="tag">Feasibility test &middot; v1.1.0</span>
+    <span class="tag">v2.0.0</span>
   </header>
+  <nav class="tabs" aria-label="Sections">
+    <button type="button" data-view="scan" aria-current="page">Scan</button>
+    <button type="button" data-view="vins" aria-current="false">Saved VINs <i id="nVins">0</i></button>
+    <button type="button" data-view="custs" aria-current="false">Customers <i id="nCusts">0</i></button>
+  </nav>
+  <div id="vScan" class="view">
 
   <section class="capture" aria-label="Add a photo">
     <button class="btn primary" id="camBtn" type="button">Take photo</button>
@@ -201,11 +293,10 @@ label.linkbtn{display:inline-block}
     <div class="fixes" id="fixes" hidden></div>
   </section>
 
-  <section class="card" id="decode" hidden aria-label="Vehicle details">
-    <h2>Vehicle details</h2>
-    <p class="muted small" id="dstatus" style="margin:6px 0 0"></p>
-    <dl id="dgrid"></dl>
+  <section class="card" id="decode" hidden aria-label="Vehicle report">
+    <div id="vrBox"></div>
   </section>
+  <section class="card" id="saveCard" aria-label="Save"><div id="saveBox"></div></section>
 
   <section class="card" aria-label="Details">
     <details>
@@ -215,7 +306,27 @@ label.linkbtn{display:inline-block}
   </section>
 
   <p class="tally muted small" id="tally">No scans yet this session.</p>
+  </div>
+
+  <div id="vVins" class="view" hidden>
+    <div class="lrow"><h2 class="vh">Saved VINs</h2></div>
+    <input id="vq" type="search" placeholder="Search VIN, make, model, plate or customer" autocomplete="off">
+    <div id="vinList" class="list"></div>
+    <div class="card stack">
+      <h2>Export and backup</h2>
+      <p class="muted small" style="margin:0">Saved VINs and customers are stored in this browser on this device. Export a backup now and then, and before clearing browser data.</p>
+      <div class="row"><button class="btn" type="button" data-do="exportVins">VINs to spreadsheet (CSV)</button><button class="btn" type="button" data-do="exportCusts">Customers to spreadsheet (CSV)</button></div>
+      <div class="row"><button class="btn" type="button" data-do="backup">Export backup</button><label class="btn">Restore backup<input type="file" accept=".json" class="sr" id="restoreFile"></label></div>
+    </div>
+  </div>
+
+  <div id="vCusts" class="view" hidden>
+    <div class="lrow"><h2 class="vh">Customers</h2><button class="btn sm" type="button" data-do="newCust">+ Customer</button></div>
+    <input id="cq" type="search" placeholder="Search name, phone, VIN or vehicle" autocomplete="off">
+    <div id="custList" class="list"></div>
+  </div>
 </main>
+<div id="sheet" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
@@ -345,7 +456,7 @@ function setSource(drawable, w, h){
   c.width = Math.round(w*k); c.height = Math.round(h*k);
   c.getContext('2d').drawImage(drawable, 0, 0, c.width, c.height);
   state.src = c; state.crop = null; state.cv = null;
-  $('vin').value = ''; state.lastDecoded = ''; $('decode').hidden = true;
+  $('vin').value = ''; state.lastDecoded = ''; $('decode').hidden = true; cur = {vin:''}; drawSaveBox();
   updateVinUI(false);
 }
 /* Steps: idle (tips), cam (live camera), crop (zoom and corner handles), result (photo with the read area shown). */
@@ -742,7 +853,7 @@ function updateVinUI(autoDecode){
   if(checkDigitOK(v)){
     setPill('good','Check digit OK');
     if(autoDecode && state.lastDecoded !== v) decode(v);
-    else if(state.lastDecoded === v) $('decode').hidden = false;
+    else if(state.lastDecoded === v){ $('decode').hidden = false; drawSaveBox(); }
   }else{
     setPill('warn','Check digit fails');
     const fx = repairs(v);
@@ -775,36 +886,6 @@ $('vin').addEventListener('input', e=>{
   if(state.current && state.current.vin !== clean && !state.current.edited){ state.current.edited = true; renderTally(); }
   updateVinUI(true);
 });
-
-/* ---------- NHTSA decode ---------- */
-async function decode(vin){
-  const box = $('decode'), grid = $('dgrid'), ds = $('dstatus');
-  box.hidden = false; grid.textContent = ''; ds.textContent = 'Looking up the vehicle at NHTSA…';
-  try{
-    const r = await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/'+encodeURIComponent(vin)+'?format=json');
-    if(!r.ok) throw new Error('NHTSA returned '+r.status);
-    const j = await r.json();
-    if($('vin').value !== vin) return;
-    const d = j.Results && j.Results[0];
-    state.lastDecoded = vin;
-    if(!d || !d.Make){
-      ds.textContent = 'NHTSA could not decode this VIN'+(d && d.ErrorText ? ': '+d.ErrorText : '.');
-      return;
-    }
-    const engine = [d.DisplacementL ? (+d.DisplacementL).toFixed(1)+' L' : '', d.EngineCylinders ? d.EngineCylinders+' cyl' : ''].filter(Boolean).join(' · ');
-    const built = [d.PlantCity, d.PlantState, d.PlantCountry].filter(Boolean).join(', ');
-    const rows = [['Year',d.ModelYear],['Make',d.Make],['Model',d.Model],['Trim',d.Trim || d.Series],['Body',d.BodyClass],['Engine',engine],['Fuel',d.FuelTypePrimary],['Drive',d.DriveType],['Built in',built]];
-    ds.textContent = (d.ErrorCode && d.ErrorCode !== '0' && !String(d.ErrorCode).startsWith('0')) ? 'NHTSA flagged this decode: '+d.ErrorText : '';
-    for(const [k,v] of rows){
-      if(!v) continue;
-      const dt = document.createElement('dt'); dt.textContent = k;
-      const dd = document.createElement('dd'); dd.textContent = v;
-      grid.append(dt,dd);
-    }
-  }catch(err){
-    ds.textContent = 'Could not reach NHTSA ('+(err.message || 'network error')+'). The VIN above is still usable.';
-  }
-}
 
 /* ---------- log + tally ---------- */
 function renderLog(log){
@@ -849,6 +930,426 @@ function makeSample(){
   g.restore();
   return c;
 }
+
+/* ---------- Full VIN report (shared by Bloom Repair and VIN Scanner) ----------
+   Sources, all free and no key needed:
+   - NHTSA vPIC DecodeVinValuesExtended: every spec field the VIN decodes to
+   - NHTSA recalls, complaints and NCAP crash ratings for that year/make/model
+   - EPA fueleconomy.gov MPG for the matching engine
+   VR.mount(el, vin, {spec, onSpec, onSummary}) draws the report into el.
+   spec = a saved decode (skips the vPIC call); onSpec(spec) is called after a fresh decode;
+   onSummary({recalls, complaints}) is called once the counts are in. */
+const VR=(()=>{
+const TIMEOUT=10000,CACHE={};
+const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function getJSON(url,opt){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),TIMEOUT);
+  try{const r=await fetch(url,Object.assign({signal:c.signal},opt||{}));if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}
+  finally{clearTimeout(t)}
+}
+const tc=s=>{s=String(s||'');return s.length<=3?s:s.toLowerCase().replace(/\b[a-z]/g,m=>m.toUpperCase())};
+const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+
+/* vPIC field names grouped into sections. Anything decoded that is not listed lands in "Other details". */
+const GROUPS=[
+ ['Vehicle',[['ModelYear','Year'],['Make','Make'],['Model','Model'],['Trim','Trim'],['Trim2','Trim 2'],['Series','Series'],['Series2','Series 2'],
+  ['VehicleType','Vehicle type'],['BodyClass','Body'],['BodyCabType','Cab type'],['Doors','Doors'],['Seats','Seats'],['SeatRows','Seat rows'],
+  ['BedType','Bed'],['BedLengthIN','Bed length (in)'],['Windows','Windows'],['EntertainmentSystem','Entertainment'],['BasePrice','Base price ($)'],
+  ['DestinationMarket','Market'],['Manufacturer','Manufacturer'],['Note','Note']]],
+ ['Engine and fuel',[['DisplacementL','Displacement (L)'],['DisplacementCI','Displacement (cu in)'],['DisplacementCC','Displacement (cc)'],
+  ['EngineCylinders','Cylinders'],['EngineConfiguration','Layout'],['EngineModel','Engine code'],['EngineManufacturer','Engine maker'],
+  ['EngineHP','Horsepower'],['EngineHP_to','Horsepower (up to)'],['EngineKW','Kilowatts'],['EngineCycles','Cycles'],['ValveTrainDesign','Valve train'],
+  ['Turbo','Turbo'],['CoolingType','Cooling'],['FuelTypePrimary','Fuel'],['FuelTypeSecondary','Second fuel'],['FuelInjectionType','Fuel injection'],
+  ['FuelTankType','Fuel tank'],['FuelTankMaterial','Tank material'],['OtherEngineInfo','Other engine info'],
+  ['ElectrificationLevel','Electrification'],['BatteryType','Battery type'],['BatteryKWh','Battery kWh'],['BatteryKWh_to','Battery kWh (up to)'],
+  ['BatteryV','Battery volts'],['BatteryV_to','Battery volts (up to)'],['BatteryA','Battery amps'],['BatteryCells','Battery cells'],['BatteryModules','Battery modules'],
+  ['BatteryPacks','Battery packs'],['BatteryInfo','Battery info'],['ChargerLevel','Charger level'],['ChargerPowerKW','Charger kW'],['EVDriveUnit','EV drive unit']]],
+ ['Drivetrain and chassis',[['DriveType','Drive'],['TransmissionStyle','Transmission'],['TransmissionSpeeds','Speeds'],['Axles','Axles'],
+  ['AxleConfiguration','Axle setup'],['BrakeSystemType','Brakes'],['BrakeSystemDesc','Brake details'],['CombinedBrakingSystem','Combined braking'],
+  ['WheelBaseType','Wheelbase type'],['WheelBaseShort','Wheelbase (in)'],['WheelBaseLong','Wheelbase long (in)'],['TrackWidth','Track width (in)'],
+  ['Wheels','Wheels'],['WheelSizeFront','Front wheel (in)'],['WheelSizeRear','Rear wheel (in)'],['SteeringLocation','Steering'],['TopSpeedMPH','Top speed (mph)']]],
+ ['Weight and towing',[['GVWR','GVWR'],['GVWR_to','GVWR (up to)'],['GCWR','GCWR'],['GCWR_to','GCWR (up to)'],['CurbWeightLB','Curb weight (lb)'],
+  ['TrailerType','Trailer hitch type'],['TrailerBodyType','Trailer body'],['TrailerLength','Trailer length (ft)'],['OtherTrailerInfo','Other trailer info']]],
+ ['Where it was built',[['PlantCompanyName','Plant'],['PlantCity','City'],['PlantState','State'],['PlantCountry','Country']]],
+ ['Safety equipment',[['AirBagLocFront','Front airbags'],['AirBagLocSide','Side airbags'],['AirBagLocCurtain','Curtain airbags'],['AirBagLocKnee','Knee airbags'],
+  ['AirBagLocSeatCushion','Seat cushion airbags'],['SeatBeltsAll','Seat belts'],['Pretensioner','Belt pretensioners'],['OtherRestraintSystemInfo','Other restraints'],
+  ['ABS','ABS'],['ESC','Stability control'],['TractionControl','Traction control'],['TPMS','Tire pressure monitor'],['EDR','Event data recorder'],
+  ['CAN_AACN','Automatic crash notification'],['KeylessIgnition','Keyless ignition'],['AutoReverseSystem','Window auto-reverse'],['DaytimeRunningLight','Daytime running lights'],
+  ['LowerBeamHeadlampLightSource','Headlight type'],['AdaptiveHeadlights','Adaptive headlights'],['SemiautomaticHeadlampBeamSwitching','Auto high beams'],['AdaptiveDrivingBeam','Adaptive driving beam']]],
+ ['Driver assist',[['AdaptiveCruiseControl','Adaptive cruise'],['ForwardCollisionWarning','Forward collision warning'],['CIB','Automatic emergency braking'],
+  ['DynamicBrakeSupport','Brake assist'],['PedestrianAutomaticEmergencyBraking','Pedestrian braking'],['LaneDepartureWarning','Lane departure warning'],
+  ['LaneKeepSystem','Lane keep assist'],['LaneCenteringAssistance','Lane centering'],['BlindSpotMon','Blind spot warning'],['BlindSpotIntervention','Blind spot intervention'],
+  ['RearCrossTrafficAlert','Rear cross traffic alert'],['RearAutomaticEmergencyBraking','Rear automatic braking'],['RearVisibilitySystem','Backup camera'],
+  ['ParkAssist','Park assist'],['AutomaticPedestrianAlertingSound','Pedestrian alert sound'],['DriverAssist','Driver assist'],['SAEAutomationLevel','Automation level'],
+  ['SAEAutomationLevel_to','Automation level (up to)'],['ActiveSafetySysNote','Safety system note']]]
+];
+const KNOWN=new Set(GROUPS.flatMap(g=>g[1].map(f=>f[0])));
+const SKIP=new Set(['ErrorCode','ErrorText','AdditionalErrorText','PossibleValues','SuggestedVIN','VIN','VehicleDescriptor','MakeID','ModelID','ManufacturerId',
+ 'NCSAMapExcApprovedBy','NCSAMapExcApprovedOn','NCSAMappingException','NCSANote','NCSABodyType','NCSAMake','NCSAModel','CashForClunkers','NonLandUse']);
+const human=k=>k.replace(/_to$/,' (up to)').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g,'$1 $2');
+
+/* ---- VIN breakdown from the characters themselves (works offline) ---- */
+const YEAR_CODES='ABCDEFGHJKLMNPRSTVWXY123456789';
+const REGION=[[/^[1-5]/,'North America'],[/^[1,4,5]/,'United States'],[/^2/,'Canada'],[/^3[A-W]/,'Mexico'],[/^3[X-Z0-7]/,'Costa Rica'],[/^J/,'Japan'],[/^K[L-R]/,'South Korea'],
+ [/^L/,'China'],[/^M[A-E]/,'India'],[/^S[A-M]/,'United Kingdom'],[/^S[N-T]/,'Germany (former East)'],[/^V[F-R]/,'France'],[/^V[S-W]/,'Spain'],[/^W/,'Germany'],
+ [/^Y[A-E]/,'Belgium'],[/^Y[F-K]/,'Finland'],[/^Y[S-W]/,'Sweden'],[/^Z[A-R]/,'Italy'],[/^9[A-E3-9]/,'Brazil'],[/^6[A-W]/,'Australia'],[/^8[A-E]/,'Argentina'],
+ [/^M[F-K]/,'Indonesia'],[/^M[L-R]/,'Thailand'],[/^T[A-H]/,'Switzerland'],[/^TM|^TN/,'Czech Republic'],[/^T[R-V]/,'Hungary'],[/^U[U-Z]/,'Romania'],[/^X[L-R]/,'Netherlands'],[/^X[S-W3-9]/,'Russia']];
+function checkDigit(v){
+  const map={A:1,B:2,C:3,D:4,E:5,F:6,G:7,H:8,J:1,K:2,L:3,M:4,N:5,P:7,R:9,S:2,T:3,U:4,V:5,W:6,X:7,Y:8,Z:9};
+  const w=[8,7,6,5,4,3,2,10,0,9,8,7,6,5,4,3,2];let s=0;
+  for(let i=0;i<17;i++){const ch=v[i];s+=(/\d/.test(ch)?+ch:(map[ch]||0))*w[i]}
+  const r=s%11;return r===10?'X':String(r);
+}
+function breakdown(vin){
+  const v=String(vin||'').toUpperCase();if(v.length!==17)return null;
+  let country='';for(const [re,n] of REGION)if(re.test(v))country=n;
+  const yi=YEAR_CODES.indexOf(v[9]),now=new Date().getFullYear()+1,years=[];
+  if(yi>=0)for(let y=1980+yi;y<=now;y+=30)years.push(y);
+  const cd=checkDigit(v);
+  return{wmi:v.slice(0,3),vds:v.slice(3,8),check:v[8],checkOK:cd===v[8],checkWant:cd,yearCode:v[9],years,plant:v[10],serial:v.slice(11),country};
+}
+
+/* ---- vPIC decode: returns {vin, at, basic, fields, error} with only the filled-in fields ---- */
+async function decode(vin){
+  const j=await getJSON('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/'+encodeURIComponent(vin)+'?format=json');
+  const x=(j.Results||[])[0]||{};
+  const fields={};
+  for(const k in x){const val=String(x[k]==null?'':x[k]).trim();if(!val||val==='Not Applicable'||SKIP.has(k))continue;fields[k]=val}
+  if(fields.Make)fields.Make=tc(fields.Make);
+  const err=String(x.ErrorCode||'').split(',').map(s=>s.trim()).filter(c=>c&&c!=='0');
+  return{vin,at:new Date().toISOString(),fields,
+    basic:{year:fields.ModelYear||'',make:fields.Make||'',model:fields.Model||'',trim:fields.Trim||fields.Series||''},
+    error:err.length?String(x.ErrorText||'').replace(/^\d+ - /,''):'',ok:!!fields.Make};
+}
+
+/* ---- year/make/model extras ---- */
+const ymm=s=>{const f=s.fields;return{y:f.ModelYear,mk:f.Make,md:f.Model}};
+async function recalls(s){const {y,mk,md}=ymm(s);
+  const j=await getJSON('https://api.nhtsa.gov/recalls/recallsByVehicle?make='+encodeURIComponent(mk)+'&model='+encodeURIComponent(md)+'&modelYear='+encodeURIComponent(y));
+  return (j.results||[]).sort((a,b)=>dt(b.ReportReceivedDate)-dt(a.ReportReceivedDate))}
+async function complaints(s){const {y,mk,md}=ymm(s);
+  const j=await getJSON('https://api.nhtsa.gov/complaints/complaintsByVehicle?make='+encodeURIComponent(mk)+'&model='+encodeURIComponent(md)+'&modelYear='+encodeURIComponent(y));
+  return j.results||[]}
+async function ratings(s){const {y,mk,md}=ymm(s);
+  const j=await getJSON('https://api.nhtsa.gov/SafetyRatings/modelyear/'+encodeURIComponent(y)+'/make/'+encodeURIComponent(mk)+'/model/'+encodeURIComponent(md));
+  const list=(j.Results||[]).slice(0,6);
+  return Promise.all(list.map(r=>getJSON('https://api.nhtsa.gov/SafetyRatings/VehicleId/'+r.VehicleId).then(d=>(d.Results||[])[0]).catch(()=>null))).then(a=>a.filter(Boolean))}
+async function fuel(s){
+  const f=s.fields,y=f.ModelYear,mk=f.Make,H={headers:{Accept:'application/json'}},FE='https://www.fueleconomy.gov/ws/rest/vehicle/';
+  const arr=x=>!x?[]:Array.isArray(x)?x:[x];
+  const models=arr((await getJSON(FE+'menu/model?year='+encodeURIComponent(y)+'&make='+encodeURIComponent(mk),H)).menuItem);
+  const want=norm(f.Model);if(!want)return[];
+  let hits=models.filter(m=>norm(m.value).startsWith(want));
+  if(!hits.length)hits=models.filter(m=>norm(m.value).includes(want)||want.includes(norm(m.value)));
+  const drive=norm(f.DriveType),d4=/4wd|4x4|awd|allwheel|4x2/.test(drive)?(/4x2|2wd/.test(drive)?'2wd':/awd|allwheel/.test(drive)?'awd':'4wd'):/rwd|rear/.test(drive)?'rwd':/fwd|front/.test(drive)?'fwd':'';
+  if(d4&&hits.length>1){const h2=hits.filter(m=>norm(m.value).includes(d4)||(d4==='4wd'&&/4wd|awd/.test(norm(m.value))));if(h2.length)hits=h2}
+  hits=hits.slice(0,3);
+  const cyl=f.EngineCylinders,disp=f.DisplacementL?(+f.DisplacementL).toFixed(1):'';
+  const out=[];
+  for(const m of hits){
+    const opts=arr((await getJSON(FE+'menu/options?year='+encodeURIComponent(y)+'&make='+encodeURIComponent(mk)+'&model='+encodeURIComponent(m.value),H)).menuItem);
+    let pick=opts.filter(o=>(!cyl||o.text.includes(cyl+' cyl'))&&(!disp||o.text.includes(disp+' L')));if(!pick.length)pick=opts;
+    for(const o of pick.slice(0,4)){
+      try{const v=await getJSON(FE+o.value,H);out.push({model:m.value,option:o.text,city:v.city08,hwy:v.highway08,comb:v.comb08,fuel:v.fuelType,tank:'',cost:v.fuelCost08,cls:v.VClass,id:o.value})}catch(x){}
+    }
+    if(out.length>=6)break;
+  }
+  return out;
+}
+const dt=s=>{const m=String(s||'').match(/(\d+)\/(\d+)\/(\d+)/);return m?new Date(+m[3],m[1]-1,+m[2]).getTime():0};
+
+/* ---- drawing ---- */
+const row=(k,v)=>`<div class="vr-r"><span>${e(k)}</span><b>${e(v)}</b></div>`;
+function specHtml(s){
+  const f=s.fields;let h='';
+  for(const [title,list] of GROUPS){
+    const rows=list.filter(([k])=>f[k]).map(([k,l])=>row(l,f[k])).join('');
+    if(rows)h+=`<details class="vr-sec"${title==='Vehicle'||title==='Engine and fuel'?' open':''}><summary>${e(title)}<i>${list.filter(([k])=>f[k]).length}</i></summary><div class="vr-grid">${rows}</div></details>`;
+  }
+  const other=Object.keys(f).filter(k=>!KNOWN.has(k));
+  if(other.length)h+=`<details class="vr-sec"><summary>Other details<i>${other.length}</i></summary><div class="vr-grid">${other.map(k=>row(human(k),f[k])).join('')}</div></details>`;
+  return h;
+}
+function bdHtml(vin){
+  const b=breakdown(vin);if(!b)return'';
+  return `<details class="vr-sec"><summary>VIN breakdown</summary><div class="vr-grid">
+   ${row('Maker code (WMI)',b.wmi+(b.country?' · '+b.country:''))}${row('Vehicle descriptor',b.vds)}
+   ${row('Check digit',b.check+(b.checkOK?' · OK':' · should be '+b.checkWant+' (only required on North American VINs)'))}
+   ${row('Model year code',b.yearCode+(b.years.length?' · '+b.years.join(' or '):''))}${row('Plant code',b.plant)}${row('Serial number',b.serial)}</div></details>`;
+}
+const stars=n=>{n=parseInt(n,10);return n>0&&n<=5?'★'.repeat(n)+'☆'.repeat(5-n):'Not rated'};
+function recallHtml(st){
+  if(st.recalls===undefined)return loading('Recalls');
+  if(st.recalls===null)return failed('Recalls');
+  const r=st.recalls;
+  return `<details class="vr-sec"${r.length?' open':''}><summary>Recalls<i class="${r.length?'vr-bad':''}">${r.length}</i></summary>
+   <div class="vr-note">Recalls for every ${e(st.label)}. To see which are still open on <b>this</b> vehicle, check the VIN at <a href="https://www.nhtsa.gov/recalls?vin=${e(st.vin)}" target="_blank" rel="noopener">nhtsa.gov/recalls</a>.</div>
+   ${r.length?r.map(x=>`<details class="vr-item"><summary><b>${e(x.Component)}</b><span>${e(x.ReportReceivedDate)} · Campaign ${e(x.NHTSACampaignNumber)}${x.parkIt?' · <em class="vr-bad">Do not drive</em>':''}${x.parkOutSide?' · <em class="vr-bad">Park outside</em>':''}${x.overTheAirUpdate?' · Over-the-air fix':''}</span></summary>
+    <p><b>Problem.</b> ${e(x.Summary)}</p><p><b>Risk.</b> ${e(x.Consequence)}</p><p><b>Fix.</b> ${e(x.Remedy)}</p>${x.Notes?`<p class="vr-note">${e(x.Notes)}</p>`:''}</details>`).join(''):'<div class="vr-note">No recalls on file for this year, make and model.</div>'}</details>`;
+}
+function complaintHtml(st){
+  if(st.complaints===undefined)return loading('Owner complaints');
+  if(st.complaints===null)return failed('Owner complaints');
+  const c=st.complaints;if(!c.length)return `<details class="vr-sec"><summary>Owner complaints<i>0</i></summary><div class="vr-note">No complaints filed with NHTSA.</div></details>`;
+  const by={};for(const x of c)for(const p of String(x.components||'Unknown').split(','))by[p.trim()]=(by[p.trim()]||0)+1;
+  const top=Object.entries(by).sort((a,b)=>b[1]-a[1]).slice(0,10),max=top[0][1];
+  const recent=[...c].sort((a,b)=>dt(b.dateComplaintFiled)-dt(a.dateComplaintFiled)).slice(0,15);
+  const crash=c.filter(x=>x.crash).length,fire=c.filter(x=>x.fire).length,inj=c.reduce((s,x)=>s+(+x.numberOfInjuries||0),0);
+  return `<details class="vr-sec"><summary>Owner complaints<i>${c.length}</i></summary>
+   <div class="vr-note">${c.length} complaints filed with NHTSA for every ${e(st.label)}${crash||fire||inj?` · ${pl(crash,'crash','crashes')}, ${pl(fire,'fire','fires')}, ${pl(inj,'injury','injuries')}`:''}. Most reported problems:</div>
+   <div class="vr-bars">${top.map(([k,n])=>`<div class="vr-bar"><span>${e(tc(k))}</span><i style="--w:${Math.max(4,Math.round(n/max*100))}%"></i><b>${n}</b></div>`).join('')}</div>
+   <details class="vr-item"><summary><b>Latest ${recent.length} complaints</b></summary>${recent.map(x=>`<p><b>${e(x.dateComplaintFiled)} · ${e(tc(String(x.components||'').replace(/,/g,', ')))}</b><br>${e(x.summary)}</p>`).join('')}</details></details>`;
+}
+function ratingHtml(st){
+  if(st.ratings===undefined)return loading('Crash ratings');
+  if(st.ratings===null)return failed('Crash ratings');
+  const r=st.ratings;if(!r.length)return `<details class="vr-sec"><summary>Crash ratings</summary><div class="vr-note">NHTSA has no crash test ratings for this vehicle.</div></details>`;
+  return `<details class="vr-sec"><summary>Crash ratings<i>${r.length}</i></summary>${r.map(x=>`<div class="vr-rate">
+   ${x.VehiclePicture?`<img src="${e(x.VehiclePicture)}" alt="${e(x.VehicleDescription)}" loading="lazy">`:''}
+   <div><b>${e(x.VehicleDescription)}</b><div class="vr-grid">${row('Overall',stars(x.OverallRating))}${row('Frontal crash',stars(x.OverallFrontCrashRating))}${row('Side crash',stars(x.OverallSideCrashRating))}${row('Rollover',stars(x.RolloverRating))}${x.RolloverPossibility?row('Rollover risk',Math.round(x.RolloverPossibility*100)+'%'):''}</div></div></div>`).join('')}</details>`;
+}
+function fuelHtml(st){
+  if(st.fuel===undefined)return loading('Fuel economy');
+  if(st.fuel===null||!st.fuel.length)return `<details class="vr-sec"><summary>Fuel economy</summary><div class="vr-note">No EPA match found. Trucks over 8,500 lb GVWR are not rated.</div></details>`;
+  return `<details class="vr-sec"><summary>Fuel economy (EPA)<i>${st.fuel.length}</i></summary>${st.fuel.map(x=>`<div class="vr-mpg"><div><b>${e(x.model)}</b><span>${e(x.option)} · ${e(x.fuel)}</span></div>
+   <div class="vr-mpgn"><span><b>${e(x.city)}</b>city</span><span><b>${e(x.hwy)}</b>hwy</span><span><b>${e(x.comb)}</b>comb</span></div></div>`).join('')}
+   <div class="vr-note">From fueleconomy.gov. If more than one is listed, pick the one that matches the vehicle.</div></details>`;
+}
+const pl=(n,a,b)=>n+' '+(n===1?a:b);
+const loading=t=>`<div class="vr-sec vr-load"><span>${e(t)}</span><span class="vr-spin" aria-label="Loading"></span></div>`;
+const failed=t=>`<div class="vr-sec vr-load"><span>${e(t)}</span><span class="vr-note">Could not load</span></div>`;
+
+function draw(el,st){
+  const s=st.spec;
+  let h='';
+  if(st.err)h=`<div class="vr-note vr-bad">${e(st.err)}</div>`;
+  else if(!s)h=loading('Decoding the VIN at NHTSA');
+  else{
+    const f=s.fields;
+    h=`<div class="vr-head"><div class="vr-title">${e([f.ModelYear,f.Make,f.Model].filter(Boolean).join(' ')||'Unknown vehicle')}</div>
+     <div class="vr-sub">${e([f.Trim||f.Series,f.BodyClass,f.DriveType].filter(Boolean).join(' · '))}</div>
+     <div class="vr-sub">${e([f.DisplacementL?(+f.DisplacementL).toFixed(1)+' L':'',f.EngineCylinders?f.EngineCylinders+' cyl':'',f.FuelTypePrimary,f.TransmissionStyle].filter(Boolean).join(' · '))}</div>
+     ${s.error?`<div class="vr-note">NHTSA note: ${e(s.error)}</div>`:''}</div>
+     ${s.ok?recallHtml(st)+specHtml(s)+complaintHtml(st)+ratingHtml(st)+fuelHtml(st):specHtml(s)}${bdHtml(st.vin)}
+     <div class="vr-note">Decoded ${e(new Date(s.at).toLocaleDateString())} from NHTSA. Recalls, complaints and ratings are looked up live.</div>`;
+  }
+  /* keep open/closed state of sections across redraws */
+  const ttl=d=>d.querySelector('summary').firstChild.textContent;
+  const prev=new Map([...el.querySelectorAll('details.vr-sec')].map(d=>[ttl(d),d.open]));
+  el.innerHTML=h;
+  el.querySelectorAll('details.vr-sec').forEach(d=>{const t=ttl(d);if(prev.has(t))d.open=prev.get(t)});
+}
+
+async function mount(el,vin,o){
+  o=o||{};vin=String(vin||'').toUpperCase().trim();
+  if(o.fresh)delete (CACHE[vin]||{}).spec;
+  const C=CACHE[vin]||(CACHE[vin]={});
+  const st={vin,spec:o.spec&&o.spec.fields?o.spec:(C.spec||null)};
+  for(const k of ['recalls','complaints','ratings','fuel'])if(C[k])st[k]=C[k];
+  el.classList.add('vr');el._vr=st;
+  draw(el,st);
+  if(!st.spec){
+    try{st.spec=await decode(vin);C.spec=st.spec}catch(x){st.err='Could not reach NHTSA to decode this VIN ('+(x.name==='AbortError'?'timed out':x.message)+'). Check the connection and try again.';draw(el,st);return st}
+    if(el._vr!==st)return st;
+    if(o.onSpec)try{o.onSpec(st.spec)}catch(x){}
+    draw(el,st);
+  }
+  if(!st.spec.ok)return st;
+  const f=st.spec.fields;st.label=[f.ModelYear,f.Make,f.Model].join(' ');
+  if(o.fresh)for(const k of ['recalls','complaints','ratings','fuel']){delete st[k];delete C[k]}
+  const go=(k,p)=>st[k]?Promise.resolve():p.then(v=>{st[k]=v;C[k]=v}).catch(()=>{st[k]=null}).then(()=>{if(el._vr===st)draw(el,st)});
+  await Promise.all([go('recalls',recalls(st.spec)),go('complaints',complaints(st.spec)),go('ratings',ratings(st.spec)),go('fuel',fuel(st.spec))]);
+  if(o.onSummary)try{o.onSummary({recalls:st.recalls?st.recalls.length:null,complaints:st.complaints?st.complaints.length:null,campaigns:(st.recalls||[]).map(r=>r.NHTSACampaignNumber),at:new Date().toISOString()})}catch(x){}
+  return st;
+}
+/* flat text of a report, for CSV export */
+function flat(spec){const f=(spec&&spec.fields)||{};return f}
+const LABELS=Object.fromEntries(GROUPS.flatMap(g=>g[1]));const label=k=>LABELS[k]||human(k);
+return{mount,decode,breakdown,checkDigit,flat,GROUPS,human,label};
+})();
+
+/* ---------- saved VIN database + customer list (stored in this browser) ---------- */
+const DBKEY='vinscanner.db.v1';
+let DB=(()=>{try{const d=JSON.parse(localStorage.getItem(DBKEY));if(d&&d.v)return d}catch(e){}return{v:1,vins:[],customers:[]}})();
+function saveDB(){try{localStorage.setItem(DBKEY,JSON.stringify(DB))}catch(e){toast('Storage is full. Export a backup, then delete old VINs.')}}
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const findVin=v=>DB.vins.find(x=>x.vin===v);
+const custOf=id=>DB.customers.find(c=>c.id===id);
+const vtitle=r=>{const f=(r&&r.spec&&r.spec.fields)||{};return [f.ModelYear,f.Make,f.Model].filter(Boolean).join(' ')||'Not decoded yet'};
+const vsub=r=>{const f=(r&&r.spec&&r.spec.fields)||{};return [f.Trim||f.Series,f.DisplacementL?(+f.DisplacementL).toFixed(1)+' L':'',f.DriveType].filter(Boolean).join(' · ')};
+const fmtPhone=s=>{const d=String(s||'').replace(/\D/g,'').replace(/^1(?=\d{10}$)/,'');return d.length===10?'('+d.slice(0,3)+')'+d.slice(3,6)+'-'+d.slice(6):String(s||'')};
+const fmtDay=iso=>iso?new Date(iso).toLocaleDateString():'';
+const vinsOf=cid=>DB.vins.filter(v=>v.customerId===cid);
+function toast(m){let t=$('toast');if(t)t.remove();t=document.createElement('div');t.id='toast';t.setAttribute('role','status');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function download(name,text,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+const csv=rows=>rows.map(r=>r.map(v=>{v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(',')).join('\n');
+const today=()=>new Date().toISOString().slice(0,10);
+
+/* tabs */
+const ui={view:'scan',vq:'',cq:'',pendingCust:''};
+function setView(v){
+  ui.view=v;
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.view===v?'page':'false'));
+  $('vScan').hidden=v!=='scan';$('vVins').hidden=v!=='vins';$('vCusts').hidden=v!=='custs';
+  if(v==='vins')drawVins();if(v==='custs')drawCusts();
+  counts();window.scrollTo(0,0);
+}
+function counts(){$('nVins').textContent=DB.vins.length;$('nCusts').textContent=DB.customers.length}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+
+/* ---- scan page: report + save ---- */
+let cur={vin:''};
+function decode(vin){
+  $('decode').hidden=false;state.lastDecoded=vin;
+  const saved=findVin(vin);cur={vin};
+  VR.mount($('vrBox'),vin,{spec:saved&&saved.spec,
+    onSpec:s=>{cur.spec=s;const r=findVin(vin);if(r){r.spec=s;saveDB()}},
+    onSummary:s=>{cur.summary=s;const r=findVin(vin);if(r){r.summary=s;saveDB()}}});
+  drawSaveBox();
+}
+function drawSaveBox(){
+  const box=$('saveBox'),r=findVin(cur.vin);if(!box)return;
+  if(!cur.vin){box.innerHTML='';return}
+  if(r){const c=custOf(r.customerId);
+    box.innerHTML=`<div class="savedline"><span class="pill good">Saved</span><span>${c?'Customer: <b>'+esc(c.name)+'</b>':'No customer yet'} · saved ${esc(fmtDay(r.saved))}</span></div>
+     <button class="btn" type="button" data-do="openVin" data-vin="${esc(r.vin)}">Open saved record</button>`;return}
+  box.innerHTML=`<h2>Save this VIN</h2>
+   <div id="scanPick"></div>
+   <div class="g2"><label class="fl"><span>Mileage</span><input id="svMiles" inputmode="numeric" autocomplete="off"></label><label class="fl"><span>Plate</span><input id="svPlate" autocapitalize="characters" autocomplete="off"></label></div>
+   <label class="fl"><span>Notes</span><textarea id="svNotes" rows="2"></textarea></label>
+   <button class="btn primary" type="button" data-do="saveScan">Save VIN to database</button>`;
+  custPicker('scanPick',ui.pendingCust,id=>{ui.pendingCust=id;drawSaveBox()});
+}
+function saveScan(){
+  if(!cur.vin)return;if(findVin(cur.vin)){drawSaveBox();return}
+  const st=$('vrBox')._vr||{};
+  DB.vins.unshift({vin:cur.vin,spec:cur.spec||st.spec||null,summary:cur.summary||null,customerId:ui.pendingCust||'',
+    mileage:($('svMiles').value||'').replace(/[^\d]/g,''),plate:($('svPlate').value||'').toUpperCase(),notes:$('svNotes').value||'',saved:new Date().toISOString()});
+  saveDB();counts();toast('VIN saved'+(ui.pendingCust?' to '+custOf(ui.pendingCust).name:''));ui.pendingCust='';drawSaveBox();
+}
+
+/* ---- customer picker (search existing or add new) ---- */
+function custPicker(hostId,selId,onPick){
+  const host=$(hostId);if(!host)return;const c=selId&&custOf(selId);
+  if(c){host.innerHTML=`<div class="fl"><span>Customer</span></div><div class="picked"><div><b>${esc(c.name)}</b><div class="muted small">${esc(fmtPhone(c.phone))}</div></div><button class="linkbtn" type="button">Change</button></div>`;
+    host.querySelector('button').onclick=()=>onPick('');return}
+  host.innerHTML=`<label class="fl"><span>Customer</span><input type="search" placeholder="Search name or phone, or type a new name" autocomplete="off"></label><div class="picklist"></div>`;
+  const q=host.querySelector('input'),list=host.querySelector('.picklist');
+  const draw=()=>{const s=q.value.trim(),l=s.toLowerCase(),d=s.replace(/\D/g,'');
+    const hits=s?DB.customers.filter(c=>c.name.toLowerCase().includes(l)||(d.length>=3&&String(c.phone).replace(/\D/g,'').includes(d))).slice(0,6):[];
+    list.innerHTML=hits.map(c=>`<button type="button" class="pick" data-id="${c.id}"><b>${esc(c.name)}</b><span>${esc(fmtPhone(c.phone))} · ${vinsOf(c.id).length} VIN${vinsOf(c.id).length===1?'':'s'}</span></button>`).join('')+
+      (s?`<button type="button" class="pick add" data-new="1">+ New customer "${esc(s)}"</button>`:'');
+    list.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{
+      if(b.dataset.new){const nc={id:uid(),name:s,phone:'',email:'',address:'',notes:'',created:new Date().toISOString()};
+        if(/^[\d\s()+-]{7,}$/.test(s)){nc.name='';nc.phone=fmtPhone(s)}DB.customers.push(nc);saveDB();counts();onPick(nc.id);if(!nc.name)openCust(nc.id);return}
+      onPick(b.dataset.id)})};
+  q.addEventListener('input',draw);draw();
+}
+
+/* ---- saved VINs list ---- */
+function vinMatch(r,q){if(!q)return true;q=q.toLowerCase();const c=custOf(r.customerId)||{},f=(r.spec&&r.spec.fields)||{};
+  return [r.vin,r.plate,r.notes,c.name,c.phone,f.ModelYear,f.Make,f.Model,f.Trim].join(' ').toLowerCase().includes(q)||(q.replace(/\D/g,'').length>=3&&String(c.phone||'').replace(/\D/g,'').includes(q.replace(/\D/g,'')))}
+function vinCard(r){const c=custOf(r.customerId),n=r.summary&&r.summary.recalls;
+  return `<button type="button" class="lcard" data-do="openVin" data-vin="${esc(r.vin)}"><div class="lrow"><b>${esc(vtitle(r))}</b>${n?`<span class="pill warn">${n} recall${n===1?'':'s'}</span>`:''}</div>
+   <div class="mono">${esc(r.vin)}</div><div class="muted small">${esc([c?c.name:'No customer',vsub(r),fmtDay(r.saved)].filter(Boolean).join(' · '))}</div></button>`}
+function drawVins(){
+  const l=DB.vins.filter(r=>vinMatch(r,ui.vq));
+  $('vinList').innerHTML=l.length?l.map(vinCard).join(''):`<p class="muted empty">${DB.vins.length?'No match.':'No saved VINs yet. Scan or type a VIN, then tap Save VIN to database.'}</p>`;
+}
+$('vq').addEventListener('input',e=>{ui.vq=e.target.value;drawVins()});
+
+/* ---- customers list ---- */
+function drawCusts(){
+  const q=ui.cq.trim().toLowerCase(),d=q.replace(/\D/g,'');
+  const l=DB.customers.filter(c=>!q||[c.name,c.email,c.address,c.notes].join(' ').toLowerCase().includes(q)||(d.length>=3&&String(c.phone).replace(/\D/g,'').includes(d))||vinsOf(c.id).some(r=>vinMatch(r,q)))
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  $('custList').innerHTML=l.length?l.map(c=>{const vs=vinsOf(c.id);return `<button type="button" class="lcard" data-do="openCust" data-id="${c.id}"><div class="lrow"><b>${esc(c.name||'(no name)')}</b><span class="muted small">${vs.length} VIN${vs.length===1?'':'s'}</span></div>
+    <div class="muted small">${esc([fmtPhone(c.phone),vs.slice(0,3).map(vtitle).join(', ')].filter(Boolean).join(' · '))}</div></button>`}).join(''):`<p class="muted empty">${DB.customers.length?'No match.':'No customers yet.'}</p>`;
+}
+$('cq').addEventListener('input',e=>{ui.cq=e.target.value;drawCusts()});
+
+/* ---- full-screen sheets ---- */
+const stack=[];
+function sheet(fn){stack.push(fn);drawSheet()}
+function closeSheet(){stack.pop();drawSheet();if(ui.view==='vins')drawVins();if(ui.view==='custs')drawCusts();if(ui.view==='scan'&&cur.vin)drawSaveBox();counts()}
+function drawSheet(){
+  const el=$('sheet');if(!stack.length){el.hidden=true;el.innerHTML='';document.body.classList.remove('noscroll');return}
+  el.hidden=false;document.body.classList.add('noscroll');el.innerHTML='';stack[stack.length-1](el);el.scrollTop=0;
+}
+const sheetHead=(t)=>`<div class="shead"><button type="button" class="back" data-do="back" aria-label="Back">&#8592; Back</button><b>${esc(t)}</b></div>`;
+const bindFields=(el,obj)=>el.querySelectorAll('[data-f]').forEach(i=>i.addEventListener('input',()=>{let v=i.value;if(i.dataset.f==='mileage')v=v.replace(/[^\d]/g,'');if(i.dataset.f==='plate')v=v.toUpperCase();obj[i.dataset.f]=v;saveDB()}));
+document.addEventListener('blur',e=>{if(e.target.dataset&&e.target.dataset.f==='phone'){e.target.value=fmtPhone(e.target.value);e.target.dispatchEvent(new Event('input'))}},true);
+
+function openVin(vin){sheet(el=>{
+  const r=findVin(vin);if(!r){closeSheet();return}
+  el.innerHTML=sheetHead(vtitle(r))+`<div class="sbody">
+   <div class="card"><div class="fl"><span>VIN</span></div><div class="mono big">${esc(r.vin)}</div>
+    <div id="vinPick" class="mt"></div>
+    <div class="g2"><label class="fl"><span>Mileage</span><input data-f="mileage" inputmode="numeric" value="${esc(r.mileage||'')}"></label><label class="fl"><span>Plate</span><input data-f="plate" autocapitalize="characters" value="${esc(r.plate||'')}"></label></div>
+    <label class="fl"><span>Notes</span><textarea data-f="notes" rows="3">${esc(r.notes||'')}</textarea></label>
+    <div class="muted small">Saved ${esc(fmtDay(r.saved))}</div></div>
+   <div id="vinRep"></div>
+   <div class="row"><button class="btn" type="button" data-do="redecode" data-vin="${esc(r.vin)}">Decode again</button><button class="btn danger" type="button" data-do="delVin" data-vin="${esc(r.vin)}">Delete VIN</button></div></div>`;
+  bindFields(el,r);
+  const pk=id=>{r.customerId=id;saveDB();custPicker('vinPick',id,pk)};custPicker('vinPick',r.customerId,pk);
+  mountSaved(r,el.querySelector('#vinRep'));
+})}
+function mountSaved(r,host,fresh){VR.mount(host,r.vin,{spec:fresh?null:r.spec,fresh,onSpec:s=>{r.spec=s;saveDB()},onSummary:s=>{r.summary=s;saveDB()}})}
+function openCust(id){sheet(el=>{
+  const c=custOf(id);if(!c){closeSheet();return}const vs=vinsOf(id);
+  el.innerHTML=sheetHead(c.name||'New customer')+`<div class="sbody"><div class="card">
+   <label class="fl"><span>Name</span><input data-f="name" value="${esc(c.name)}" autocomplete="off"></label>
+   <div class="g2"><label class="fl"><span>Phone</span><input data-f="phone" type="tel" value="${esc(c.phone)}"></label><label class="fl"><span>Email</span><input data-f="email" type="email" value="${esc(c.email)}"></label></div>
+   <label class="fl"><span>Address</span><input data-f="address" value="${esc(c.address)}"></label>
+   <label class="fl"><span>Notes</span><textarea data-f="notes" rows="2">${esc(c.notes)}</textarea></label></div>
+   <h2 class="mt">Vehicles</h2>
+   ${vs.length?vs.map(vinCard).join(''):'<p class="muted small">No VINs saved for this customer yet.</p>'}
+   <button class="btn primary" type="button" data-do="scanFor" data-id="${c.id}">Scan a VIN for ${esc(c.name||'this customer')}</button>
+   <button class="btn danger" type="button" data-do="delCust" data-id="${c.id}">Delete customer</button></div>`;
+  bindFields(el,c);
+  el.querySelector('[data-f=name]').addEventListener('input',e=>{el.querySelector('.shead b').textContent=e.target.value||'New customer'});
+})}
+
+/* ---- export / backup ---- */
+function exportVins(){
+  const keys=[...new Set(DB.vins.flatMap(r=>Object.keys((r.spec&&r.spec.fields)||{})))];
+  const lead=['ModelYear','Make','Model','Trim','Series','BodyClass','DriveType','DisplacementL','EngineCylinders','FuelTypePrimary','TransmissionStyle','GVWR','PlantCountry'];
+  const rest=keys.filter(k=>!lead.includes(k)).sort();
+  const head=['VIN','Customer','Phone','Email','Address','Plate','Mileage','Notes','Saved','Recalls','Complaints','Recall campaigns',...lead.concat(rest).map(VR.label)];
+  const rows=DB.vins.map(r=>{const c=custOf(r.customerId)||{},f=(r.spec&&r.spec.fields)||{},s=r.summary||{};
+    return [r.vin,c.name,fmtPhone(c.phone),c.email,c.address,r.plate,r.mileage,r.notes,fmtDay(r.saved),s.recalls,s.complaints,(s.campaigns||[]).join(' '),...lead.concat(rest).map(k=>f[k])]});
+  download('saved-vins-'+today()+'.csv',csv([head,...rows]),'text/csv');
+}
+function exportCusts(){
+  download('customers-'+today()+'.csv',csv([['Name','Phone','Email','Address','Notes','VINs','Vehicles'],...DB.customers.map(c=>{const vs=vinsOf(c.id);return [c.name,fmtPhone(c.phone),c.email,c.address,c.notes,vs.map(v=>v.vin).join(' '),vs.map(vtitle).join('; ')]})]),'text/csv');
+}
+const backup=()=>download('vin-scanner-backup-'+today()+'.json',JSON.stringify({app:'vin-scanner',DB}),'application/json');
+document.addEventListener('change',async e=>{if(e.target.id!=='restoreFile')return;const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const d=JSON.parse(await f.text());if(d.app!=='vin-scanner'||!d.DB)throw 0;
+    if(!confirm('Replace the saved VINs and customers in this browser with this backup?'))return;DB=d.DB;saveDB();setView(ui.view);toast('Backup restored')}catch(x){toast('That is not a VIN Scanner backup')}});
+
+/* ---- one click handler for everything above ---- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-do]');if(!b)return;const d=b.dataset;
+  switch(d.do){
+    case 'saveScan':saveScan();break;
+    case 'openVin':openVin(d.vin);break;
+    case 'openCust':openCust(d.id);break;
+    case 'back':closeSheet();break;
+    case 'newCust':{const c={id:uid(),name:'',phone:'',email:'',address:'',notes:'',created:new Date().toISOString()};DB.customers.push(c);saveDB();counts();openCust(c.id);break}
+    case 'redecode':{const r=findVin(d.vin);if(r)mountSaved(r,$('vinRep'),true);break}
+    case 'delVin':if(confirm('Delete VIN '+d.vin+' from the database?')){DB.vins=DB.vins.filter(r=>r.vin!==d.vin);saveDB();closeSheet();toast('VIN deleted')}break;
+    case 'delCust':{const n=vinsOf(d.id).length;if(confirm('Delete this customer?'+(n?' Their '+n+' VIN'+(n===1?'':'s')+' stay in the database with no customer.':''))){
+      DB.vins.forEach(r=>{if(r.customerId===d.id)r.customerId=''});DB.customers=DB.customers.filter(c=>c.id!==d.id);saveDB();closeSheet();toast('Customer deleted')}break}
+    case 'scanFor':ui.pendingCust=d.id;stack.length=0;drawSheet();setView('scan');
+      if(cur.vin&&!findVin(cur.vin))drawSaveBox();toast('Scan or type the VIN. It will save to '+(custOf(d.id).name||'this customer'));break;
+    case 'exportVins':exportVins();break;
+    case 'exportCusts':exportCusts();break;
+    case 'backup':backup();break;
+  }
+});
+counts();
 
 /* ---------- wiring ---------- */
 $('cam').addEventListener('change', e=>{ loadFile(e.target.files[0]); e.target.value = ''; });
