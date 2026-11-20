@@ -221,7 +221,7 @@ body.noscroll{overflow:hidden}
 <main>
   <header>
     <h1>VIN Scanner</h1>
-    <span class="tag">v2.2.0</span>
+    <span class="tag">v2.2.1</span>
   </header>
   <nav class="tabs" aria-label="Sections">
     <button type="button" data-view="scan" aria-current="page">Scan</button>
@@ -1086,6 +1086,11 @@ async function fuel(s){
   for(const m of hits){
     const opts=arr((await getJSON(FE+'menu/options?year='+encodeURIComponent(y)+'&make='+encodeURIComponent(mk)+'&model='+encodeURIComponent(m.value),H)).menuItem);
     let pick=opts.filter(o=>(!cyl||o.text.includes(cyl+' cyl'))&&(!disp||o.text.includes(disp+' L')));if(!pick.length)pick=opts;
+    const ts=String(f.TransmissionStyle||'');
+    const byT=/manual/i.test(ts)&&!/automated/i.test(ts)?pick.filter(o=>/^Man/i.test(o.text)):/auto|cvt|continuous|dual|dct/i.test(ts)?pick.filter(o=>!/^Man/i.test(o.text)):pick;
+    if(byT.length)pick=byT;
+    const sp=parseInt(f.TransmissionSpeeds,10),bySp=sp?pick.filter(o=>new RegExp('\\b'+sp+'-spd|[AS]'+sp+'\\)').test(o.text)):pick;
+    if(bySp.length)pick=bySp;
     for(const o of pick.slice(0,4)){
       try{const v=await getJSON(FE+o.value,H);out.push({model:m.value,option:o.text,city:v.city08,hwy:v.highway08,comb:v.comb08,fuel:v.fuelType,cost:v.fuelCost08,cls:v.VClass,id:o.value,trany:v.trany,tdesc:v.trans_dscr,ss:v.startStop,eng:v.eng_dscr,drive:v.drive})}catch(x){}
     }
